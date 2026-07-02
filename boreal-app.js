@@ -87,6 +87,7 @@ function runPageModulesOnce(container) {
     initDepthTiles,
     initModalBasic,          // pop-ups (Osmo modal B) — secteurs T02
     initMarqueeScrollDirection, // marquee direction-au-scroll (Osmo) — section clé en main
+    initStickyStepsBasic,    // étapes sticky (Osmo, version GSAP ScrollTrigger) — processus
     initNumberOdometer,
     initLogoWallCycle,
     init3DCardsTornado,
@@ -954,6 +955,39 @@ function initModalBasic() {
   });
 
   document.querySelectorAll("[data-modal-close]").forEach((btn) => btn.addEventListener("click", closeModals));
+}
+
+// ---- ÉTAPES STICKY (Osmo, version GSAP ScrollTrigger) ----
+function initStickyStepsBasic() {
+  const containers = document.querySelectorAll("[data-sticky-steps-init]");
+  if (!containers.length) return;
+
+  containers.forEach((container) => {
+    const items = [...container.querySelectorAll("[data-sticky-steps-item]")];
+    if (!items.length) return;
+
+    function setActiveStep(activeIndex) {
+      items.forEach((item, index) => {
+        let status = "active";
+        if (index < activeIndex) status = "before";
+        if (index > activeIndex) status = "after";
+        item.setAttribute("data-sticky-steps-item-status", status);
+      });
+    }
+
+    items.forEach((item, index) => {
+      const anchor = item.querySelector("[data-sticky-steps-anchor]");
+      if (!anchor) return;
+      ScrollTrigger.create({
+        trigger: anchor,
+        start: "center center",
+        onEnter: () => setActiveStep(index),
+        onEnterBack: () => setActiveStep(index)
+      });
+    });
+
+    setActiveStep(0);
+  });
 }
 
 // ---- MARQUEE direction-au-scroll (Osmo) ----

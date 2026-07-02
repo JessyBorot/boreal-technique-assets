@@ -141,6 +141,28 @@
 [data-modal-name][data-modal-status="active"] { display: flex; }
 
 
+/* ===== ÉTAPES STICKY (Osmo) — états before/active/after ===== */
+@media screen and (min-width: 992px) {
+  [data-sticky-steps-item-status] .sticky-steps__visual {
+    transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+    opacity: 0;
+    visibility: hidden;
+  }
+  [data-sticky-steps-item-status="before"] .sticky-steps__visual,
+  [data-sticky-steps-item-status="active"] .sticky-steps__visual {
+    opacity: 1;
+    visibility: visible;
+  }
+  [data-sticky-steps-item-status] .sticky-steps__text {
+    transition: opacity 0.5s ease-in-out;
+    opacity: 0.25;
+  }
+  [data-sticky-steps-item-status="active"] .sticky-steps__text {
+    opacity: 1;
+  }
+}
+
+
 /* ===== MARQUEE direction-au-scroll (Osmo) — flèche qui pivote ===== */
 .marquee__advanced__arrow-svg,
 [data-marquee-direction="right"][data-marquee-status="inverted"] .marquee__advanced__arrow-svg {
