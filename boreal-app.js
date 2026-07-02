@@ -990,7 +990,9 @@ function initFixedUnderlayNavigation() {
 
   gsap.set(overlayEl, { visibility: "hidden", pointerEvents: "none" });
   gsap.set(darkEl, { autoAlpha: 0 });
-  gsap.set(mainEl, { x: 0 });
+  // ⚠️ PAS de transform au repos sur [data-main] : un transform casserait le
+  // position:fixed des éléments à l'intérieur (ex. la vraie nav). Le transform
+  // n'est appliqué que pendant l'ouverture, puis nettoyé à la fermeture.
   gsap.set(toggleLabels, { yPercent: 0 });
   gsap.set(toggleBars, { y: 0, rotation: 0 });
   gsap.set(menuBorder, { scaleX: 0 });
@@ -999,7 +1001,15 @@ function initFixedUnderlayNavigation() {
   gsap.set(corners, { scale: 0 });
 
   function buildTimeline() {
-    tl = gsap.timeline({ paused: true, defaults: { ease: "energy", easeReverse: "power2.inOut" } });
+    tl = gsap.timeline({
+      paused: true,
+      defaults: { ease: "energy", easeReverse: "power2.inOut" },
+      // Au repos (fermé), on retire le transform de [data-main] pour que la vraie
+      // nav (fixed, à l'intérieur) reste fixe. onComplete = fermé depuis l'état ouvert ;
+      // onReverseComplete = fermé en cours d'ouverture.
+      onComplete: () => gsap.set([mainEl, overlayEl], { clearProps: "transform" }),
+      onReverseComplete: () => gsap.set([mainEl, overlayEl], { clearProps: "transform" })
+    });
 
     tl.set(overlayEl, { visibility: "visible", pointerEvents: "auto" }, 0);
     tl.to([mainEl, overlayEl], { x: getMenuOffset, duration: 0.7 }, 0)
