@@ -141,6 +141,23 @@
 [data-modal-name][data-modal-status="active"] { display: flex; }
 
 
+/* ===== PANNEAU FORMULAIRE latéral (Osmo fixed underlay) — soumission ===== */
+:root { --menu-width: 30em; }
+@media screen and (max-width: 767px) { :root { --menu-width: 80vw; } }
+
+/* Aperçu dans le Designer : mettre data-menu-status="open" sur le body.
+   (Sélecteur scopé .wf-design-mode → n'affecte pas le site publié.)
+   ⚠️ Adapte les classes si les tiennes diffèrent de la démo Osmo. */
+.wf-design-mode :where([data-menu-status="open"]) .main-overlay { visibility: visible; pointer-events: auto; }
+.wf-design-mode :where([data-menu-status="open"]) .main-overlay__dark { opacity: 1; }
+.wf-design-mode :where([data-menu-status="open"]) .underlay-nav__toggle { color: #312e2e; }
+.wf-design-mode :where([data-menu-status="open"]) [data-main],
+.wf-design-mode :where([data-menu-status="open"]) [data-underlay-nav-overlay] {
+  transform: translateX(calc(var(--menu-width) * -1));
+  visibility: visible;
+}
+
+
 /* ===== ACCORDÉON CSS (Osmo) — FAQ ===== */
 .accordion-css__item-bottom { transition: grid-template-rows 0.6s cubic-bezier(0.625, 0.05, 0, 1); }
 [data-accordion-status="active"] .accordion-css__item-bottom { grid-template-rows: 1fr; }
