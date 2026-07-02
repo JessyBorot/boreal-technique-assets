@@ -141,6 +141,18 @@
 [data-modal-name][data-modal-status="active"] { display: flex; }
 
 
+/* ===== MARQUEE direction-au-scroll (Osmo) — flèche qui pivote ===== */
+.marquee__advanced__arrow-svg,
+[data-marquee-direction="right"][data-marquee-status="inverted"] .marquee__advanced__arrow-svg {
+  transition: 0.5s cubic-bezier(0.625, 0.05, 0, 1);
+  transform: rotate(-180deg);
+}
+[data-marquee-status="inverted"] .marquee__advanced__arrow-svg,
+[data-marquee-direction="right"][data-marquee-status="normal"] .marquee__advanced__arrow-svg {
+  transform: rotate(-359.999deg);
+}
+
+
 /* ===== FOOTER — lien qui se remplit ===== */
 .demo-footer__a {
   --fill: #ffa62b; --base: #ffffff;
