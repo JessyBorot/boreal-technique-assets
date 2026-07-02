@@ -68,6 +68,7 @@ function initOnce() {
   initAnchorSmoothScroll();
   initTwostepScalingNavigation();
   initCursorMarqueeEffect();
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModals(); }); // 1× (persistant)
 }
 
 // Modules PAR PAGE : appelés 1×/page (once OU afterEnter, le 1er qui vient)
@@ -84,6 +85,7 @@ function runPageModulesOnce(container) {
     initBackgroundZoom,      // hero page service
     initStackingStickyCardsBounce,
     initDepthTiles,
+    initModalBasic,          // pop-ups (Osmo modal B) — secteurs T02
     initNumberOdometer,
     initLogoWallCycle,
     init3DCardsTornado,
@@ -143,7 +145,7 @@ function runPageEnterAnimation(next) {
 // BARBA
 // -----------------------------------------
 function initBarba() {
-  barba.hooks.before(() => { closeNav(); });
+  barba.hooks.before(() => { closeNav(); closeModals(); });
 
   barba.hooks.beforeEnter((data) => {
     gsap.set(data.next.container, { position: "fixed", top: 0, left: 0, right: 0 });
@@ -193,6 +195,14 @@ function initBarba() {
 function closeNav() {
   const s = document.querySelector("[data-nav-status]");
   if (s) s.setAttribute("data-nav-status", "not-active");
+}
+
+function closeModals() {
+  document.querySelectorAll("[data-modal-target]").forEach((t) => t.setAttribute("data-modal-status", "not-active"));
+  document.querySelectorAll("[data-modal-name]").forEach((m) => m.setAttribute("data-modal-status", "not-active"));
+  const g = document.querySelector("[data-modal-group-status]");
+  if (g) g.setAttribute("data-modal-group-status", "not-active");
+  if (window.lenis) window.lenis.start(); // relance le scroll
 }
 
 const themeConfig = {
@@ -918,6 +928,30 @@ function init3DCardsTornado() {
     gsap.ticker.add(tick);
     window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { rebuild(); ScrollTrigger.refresh(); }, 150); });
   });
+}
+
+// ---- MODALES (Osmo basic modal B) — pop-ups secteurs ----
+function initModalBasic() {
+  const modalGroup = document.querySelector("[data-modal-group-status]");
+  const modals = document.querySelectorAll("[data-modal-name]");
+  const modalTargets = document.querySelectorAll("[data-modal-target]");
+  if (!modalTargets.length) return;
+
+  modalTargets.forEach((modalTarget) => {
+    modalTarget.addEventListener("click", function () {
+      const name = this.getAttribute("data-modal-target");
+      modalTargets.forEach((t) => t.setAttribute("data-modal-status", "not-active"));
+      modals.forEach((m) => m.setAttribute("data-modal-status", "not-active"));
+      const t = document.querySelector(`[data-modal-target="${name}"]`);
+      const m = document.querySelector(`[data-modal-name="${name}"]`);
+      if (t) t.setAttribute("data-modal-status", "active");
+      if (m) m.setAttribute("data-modal-status", "active");
+      if (modalGroup) modalGroup.setAttribute("data-modal-group-status", "active");
+      if (window.lenis) window.lenis.stop(); // fige le scroll derrière la modale
+    });
+  });
+
+  document.querySelectorAll("[data-modal-close]").forEach((btn) => btn.addEventListener("click", closeModals));
 }
 
 // ---- FOOTER PARALLAX ----

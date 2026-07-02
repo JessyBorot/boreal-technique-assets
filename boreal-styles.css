@@ -135,6 +135,12 @@
 .cards-tornado__item:hover .tag { opacity: 1; transform: translateY(0); }
 
 
+/* ===== MODALES (Osmo basic modal B) — pop-ups secteurs ===== */
+[data-modal-group-status] { transition: all 0.2s linear; }
+[data-modal-group-status="active"] { opacity: 1; visibility: visible; }
+[data-modal-name][data-modal-status="active"] { display: flex; }
+
+
 /* ===== FOOTER — lien qui se remplit ===== */
 .demo-footer__a {
   --fill: #ffa62b; --base: #ffffff;
