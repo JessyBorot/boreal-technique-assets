@@ -938,7 +938,8 @@ function initModalBasic() {
   if (!modalTargets.length) return;
 
   modalTargets.forEach((modalTarget) => {
-    modalTarget.addEventListener("click", function () {
+    modalTarget.addEventListener("click", function (e) {
+      e.preventDefault(); // évite le saut en haut si le déclencheur est un <a>
       const name = this.getAttribute("data-modal-target");
       modalTargets.forEach((t) => t.setAttribute("data-modal-status", "not-active"));
       modals.forEach((m) => m.setAttribute("data-modal-status", "not-active"));
