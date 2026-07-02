@@ -159,8 +159,7 @@ function initBarba() {
 
   barba.hooks.afterEnter((data) => {
     runPageModulesOnce(data.next.container);
-    if (hasLenis) { lenis.resize(); lenis.start(); }
-    if (hasScrollTrigger) ScrollTrigger.refresh();
+    settleScroll(data.next.container);
   });
 
   barba.init({
@@ -174,7 +173,7 @@ function initBarba() {
         initOnce();
         applyThemeFrom(data.next.container);
         runPageModulesOnce(data.next.container); // filet si afterEnter ne fire pas sur once
-        if (hasScrollTrigger) ScrollTrigger.refresh();
+        settleScroll(data.next.container);
         return runPageOnceAnimation(data.next.container);
       },
       async leave(data) {
@@ -234,6 +233,24 @@ function resetPage(container) {
   window.scrollTo(0, 0);
   gsap.set(container, { clearProps: "position,top,left,right" });
   if (hasLenis) { lenis.resize(); lenis.start(); }
+}
+
+// Recale les ScrollTriggers après stabilisation du layout (images, clones tornado,
+// rollers odometer…). En navigation SPA il n'y a pas de window.load → sans ça, des
+// triggers (ex. footer parallax) sont mesurés trop tôt → glitch. Correctif : refresh
+// immédiat + après 2 RAF + délais + à chaque image du nouveau container qui se charge.
+function settleScroll(container) {
+  const doIt = () => { if (hasLenis) lenis.resize(); if (hasScrollTrigger) ScrollTrigger.refresh(); };
+  if (hasLenis) lenis.start();
+  doIt();
+  requestAnimationFrame(() => requestAnimationFrame(doIt));
+  setTimeout(doIt, 300);
+  setTimeout(doIt, 800);
+  if (container) {
+    container.querySelectorAll("img").forEach((img) => {
+      if (!img.complete) img.addEventListener("load", doIt, { once: true });
+    });
+  }
 }
 
 function initBarbaNavUpdate(data) {
