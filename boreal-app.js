@@ -1,0 +1,922 @@
+/* =====================================================
+   BORÉAL — app.js  (chargé UNE fois, persistant)
+   - GSAP + plugins viennent du HEAD (avec verrou window.gsap).
+   - Lenis + Barba chargés AVANT ce fichier (voir footer).
+   - Toutes les définitions de modules vivent ici (plus aucun
+     <script> de section dans les pages).
+   - Barba appelle chaque module 1×/page (reload + navigation).
+   ===================================================== */
+
+// -----------------------------------------
+// STATE
+// -----------------------------------------
+let lenis = null;
+let nextPage = document;
+let onceInitialized = false;
+let currentInitedContainer = null;
+
+const hasLenis = typeof window.Lenis !== "undefined";
+const hasScrollTrigger = typeof window.ScrollTrigger !== "undefined";
+
+const rmMQ = window.matchMedia("(prefers-reduced-motion: reduce)");
+let reducedMotion = rmMQ.matches;
+rmMQ.addEventListener?.("change", (e) => (reducedMotion = e.matches));
+rmMQ.addListener?.((e) => (reducedMotion = e.matches));
+
+const has = (s) => !!(nextPage || document).querySelector(s);
+const durationDefault = 0.6;
+
+// Debounce partagé (utilisé par plusieurs modules)
+function debounceOnWidthChange(fn, ms) {
+  let last = innerWidth, timer;
+  return function (...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (innerWidth !== last) { last = innerWidth; fn.apply(this, args); }
+    }, ms);
+  };
+}
+
+
+// -----------------------------------------
+// BOOT (attend le GSAP du head)
+// -----------------------------------------
+function boot() {
+  if (!window.gsap) { return void setTimeout(boot, 50); }
+  gsap.registerPlugin(ScrollTrigger, Flip, SplitText, CustomEase, Observer);
+  CustomEase.create("osmo", "0.625, 0.05, 0, 1");
+  CustomEase.create("depth", "M0,0 C0.6,0 0,1 1,1");
+  gsap.defaults({ ease: "osmo", duration: durationDefault });
+
+  if (!reducedMotion) {
+    const cols0 = document.querySelectorAll("[data-transition-column]");
+    if (cols0.length) gsap.set(cols0, { yPercent: 100 });
+  }
+  initBarba();
+}
+
+
+// -----------------------------------------
+// REGISTRES
+// -----------------------------------------
+
+// Modules PERSISTANTS (une seule fois) : nav + curseur (éléments hors container)
+function initOnce() {
+  if (onceInitialized) return;
+  onceInitialized = true;
+  initLenis();
+  initAnchorSmoothScroll();
+  initTwostepScalingNavigation();
+  initCursorMarqueeEffect();
+}
+
+// Modules PAR PAGE : appelés 1×/page (once OU afterEnter, le 1er qui vient)
+function runPageModulesOnce(container) {
+  if (currentInitedContainer === container) return; // déjà fait pour cette page
+  currentInitedContainer = container;
+  nextPage = container || document;
+
+  const modules = [
+    initButtonCharacterStagger,
+    initParallax,
+    initSplitHeadings,
+    initFlipOnScroll,        // hero home
+    initBackgroundZoom,      // hero page service
+    initStackingStickyCardsBounce,
+    initDepthTiles,
+    initNumberOdometer,
+    initLogoWallCycle,
+    init3DCardsTornado,
+    initFooterParallax
+  ];
+  modules.forEach((fn) => {
+    try { if (typeof fn === "function") fn(); }
+    catch (e) { console.warn("[boreal] module", fn && fn.name, e); }
+  });
+}
+
+
+// -----------------------------------------
+// TRANSITIONS — COLUMN WIPE
+// -----------------------------------------
+function runPageOnceAnimation(next) {
+  const wrap = document.querySelector("[data-transition-wrap]");
+  const cols = wrap ? wrap.querySelectorAll("[data-transition-column]") : [];
+  const tl = gsap.timeline();
+  tl.call(() => { resetPage(next); }, null, 0);
+  if (reducedMotion || !cols.length) return tl;
+  tl.set(cols, { yPercent: 100 }, 0);
+  tl.to(cols, { yPercent: 200, duration: 0.6, stagger: 0.06 }, 0.15);
+  return tl;
+}
+
+function runPageLeaveAnimation(current, next) {
+  const wrap = document.querySelector("[data-transition-wrap]");
+  const cols = wrap ? wrap.querySelectorAll("[data-transition-column]") : [];
+  const tl = gsap.timeline({ onComplete: () => { current.remove(); } });
+  if (reducedMotion || !cols.length) return tl.set(current, { autoAlpha: 0 });
+  tl.set(next, { autoAlpha: 0 }, 0);
+  tl.fromTo(cols, { yPercent: 0 }, { yPercent: 100, duration: 0.6, stagger: { each: 0.06, from: "end" } }, 0);
+  return tl;
+}
+
+function runPageEnterAnimation(next) {
+  const wrap = document.querySelector("[data-transition-wrap]");
+  const cols = wrap ? wrap.querySelectorAll("[data-transition-column]") : [];
+  const tl = gsap.timeline();
+  if (reducedMotion || !cols.length) {
+    tl.set(next, { autoAlpha: 1 });
+    tl.call(resetPage, [next]);
+    tl.add("pageReady");
+    return new Promise((resolve) => tl.call(resolve, null, "pageReady"));
+  }
+  tl.add("startEnter", 1);
+  tl.set(next, { autoAlpha: 1 }, "startEnter");
+  tl.call(resetPage, [next], "startEnter"); // stabilise le layout à couvert (pas de saut footer)
+  tl.to(cols, { yPercent: 200, duration: 0.6, stagger: 0.06, overwrite: "auto" }, "startEnter");
+  tl.add("pageReady");
+  return new Promise((resolve) => { tl.call(resolve, null, "pageReady"); });
+}
+
+
+// -----------------------------------------
+// BARBA
+// -----------------------------------------
+function initBarba() {
+  barba.hooks.before(() => { closeNav(); });
+
+  barba.hooks.beforeEnter((data) => {
+    gsap.set(data.next.container, { position: "fixed", top: 0, left: 0, right: 0 });
+    if (lenis && typeof lenis.stop === "function") lenis.stop();
+    applyThemeFrom(data.next.container);
+  });
+
+  barba.hooks.afterLeave(() => {
+    if (hasScrollTrigger) ScrollTrigger.getAll().forEach((t) => t.kill());
+  });
+
+  barba.hooks.enter((data) => { initBarbaNavUpdate(data); });
+
+  barba.hooks.afterEnter((data) => {
+    runPageModulesOnce(data.next.container);
+    if (hasLenis) { lenis.resize(); lenis.start(); }
+    if (hasScrollTrigger) ScrollTrigger.refresh();
+  });
+
+  barba.init({
+    debug: false,
+    timeout: 7000,
+    preventRunning: true,
+    transitions: [{
+      name: "default",
+      sync: true,
+      async once(data) {
+        initOnce();
+        applyThemeFrom(data.next.container);
+        runPageModulesOnce(data.next.container); // filet si afterEnter ne fire pas sur once
+        if (hasScrollTrigger) ScrollTrigger.refresh();
+        return runPageOnceAnimation(data.next.container);
+      },
+      async leave(data) {
+        return runPageLeaveAnimation(data.current.container, data.next.container);
+      },
+      async enter(data) {
+        return runPageEnterAnimation(data.next.container);
+      }
+    }]
+  });
+}
+
+
+// -----------------------------------------
+// HELPERS
+// -----------------------------------------
+function closeNav() {
+  const s = document.querySelector("[data-nav-status]");
+  if (s) s.setAttribute("data-nav-status", "not-active");
+}
+
+const themeConfig = {
+  light: { nav: "dark",  transition: "light" },
+  dark:  { nav: "light", transition: "dark"  }
+};
+
+function applyThemeFrom(container) {
+  const pageTheme = (container && container.dataset && container.dataset.pageTheme) || "dark";
+  const config = themeConfig[pageTheme] || themeConfig.dark;
+  document.body.dataset.pageTheme = pageTheme;
+  const transitionEl = document.querySelector("[data-theme-transition]");
+  if (transitionEl) transitionEl.dataset.themeTransition = config.transition;
+  const nav = document.querySelector("[data-theme-nav]");
+  if (nav) nav.dataset.themeNav = config.nav;
+}
+
+function initLenis() {
+  if (lenis) return;
+  if (!hasLenis) return;
+  lenis = new Lenis({ lerp: 0.165, wheelMultiplier: 1.25, syncTouch: true });
+  window.lenis = lenis;
+  if (hasScrollTrigger) lenis.on("scroll", ScrollTrigger.update);
+  gsap.ticker.add((time) => { lenis.raf(time * 1000); });
+  gsap.ticker.lagSmoothing(0);
+}
+
+function initAnchorSmoothScroll() {
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a) return;
+    const id = a.getAttribute("href");
+    if (id.length > 1 && lenis) { e.preventDefault(); lenis.scrollTo(id); }
+  });
+}
+
+function resetPage(container) {
+  window.scrollTo(0, 0);
+  gsap.set(container, { clearProps: "position,top,left,right" });
+  if (hasLenis) { lenis.resize(); lenis.start(); }
+}
+
+function initBarbaNavUpdate(data) {
+  var tpl = document.createElement("template");
+  tpl.innerHTML = data.next.html.trim();
+  var nextNodes = tpl.content.querySelectorAll("[data-barba-update]");
+  var currentNodes = document.querySelectorAll("nav [data-barba-update]");
+  currentNodes.forEach(function (curr, index) {
+    var next = nextNodes[index];
+    if (!next) return;
+    var newStatus = next.getAttribute("aria-current");
+    if (newStatus !== null) curr.setAttribute("aria-current", newStatus);
+    else curr.removeAttribute("aria-current");
+    curr.setAttribute("class", next.getAttribute("class") || "");
+  });
+}
+
+
+// =========================================================
+// MODULES  (définitions — sans DOMContentLoaded ni registerPlugin)
+// =========================================================
+
+// ---- NAV : two-step scaling ----
+function initTwostepScalingNavigation() {
+  const navElement = document.querySelector("[data-twostep-nav]");
+  const navStatusEl = document.querySelector("[data-nav-status]");
+  if (!navElement || !navStatusEl) return;
+
+  const setNavStatus = (status) => navStatusEl.setAttribute("data-nav-status", status);
+  const isActive = () => navStatusEl.getAttribute("data-nav-status") === "active";
+  const openNav = () => setNavStatus("active");
+  const closeNavLocal = () => setNavStatus("not-active");
+  const toggleNav = () => (isActive() ? closeNavLocal() : openNav());
+
+  document.querySelectorAll('[data-nav-toggle="toggle"]').forEach((btn) => btn.addEventListener("click", toggleNav));
+  document.querySelectorAll('[data-nav-toggle="close"]').forEach((btn) => btn.addEventListener("click", closeNavLocal));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && isActive()) closeNavLocal(); });
+}
+
+// ---- BOUTONS : stagger caractères (guardé pour ne pas re-wrapper) ----
+function initButtonCharacterStagger() {
+  const offsetIncrement = 0.01;
+  const buttons = document.querySelectorAll("[data-button-animate-chars]");
+  buttons.forEach((button) => {
+    if (button.hasAttribute("data-chars-done")) return; // déjà traité
+    button.setAttribute("data-chars-done", "");
+    const text = button.textContent;
+    button.innerHTML = "";
+    [...text].forEach((char, index) => {
+      const span = document.createElement("span");
+      span.textContent = char;
+      span.style.transitionDelay = `${index * offsetIncrement}s`;
+      if (char === " ") span.style.whiteSpace = "pre";
+      button.appendChild(span);
+    });
+  });
+}
+
+// ---- CURSEUR : marquee ----
+function initCursorMarqueeEffect() {
+  const hoverOutDelay = 0.4;
+  const followDuration = 0.4;
+  const speedMultiplier = 5;
+
+  const cursor = document.querySelector("[data-cursor-marquee-status]");
+  if (!cursor) return;
+  const targets = cursor.querySelectorAll("[data-cursor-marquee-text-target]");
+
+  const xTo = gsap.quickTo(cursor, "x", { duration: followDuration, ease: "power3" });
+  const yTo = gsap.quickTo(cursor, "y", { duration: followDuration, ease: "power3" });
+
+  let pauseTimeout = null, activeEl = null, lastX = 0, lastY = 0;
+
+  function playFor(el) {
+    if (!el) return;
+    if (pauseTimeout) clearTimeout(pauseTimeout);
+    const text = el.getAttribute("data-cursor-marquee-text") || "";
+    const sec = (text.length || 1) / speedMultiplier;
+    targets.forEach((t) => { t.textContent = text; t.style.animationPlayState = "running"; t.style.animationDuration = sec + "s"; });
+    cursor.setAttribute("data-cursor-marquee-status", "active");
+    activeEl = el;
+  }
+  function pauseLater() {
+    cursor.setAttribute("data-cursor-marquee-status", "not-active");
+    if (pauseTimeout) clearTimeout(pauseTimeout);
+    pauseTimeout = setTimeout(() => { targets.forEach((t) => { t.style.animationPlayState = "paused"; }); }, hoverOutDelay * 1000);
+    activeEl = null;
+  }
+  function checkTarget() {
+    const el = document.elementFromPoint(lastX, lastY);
+    const hit = el && el.closest("[data-cursor-marquee-text]");
+    if (hit !== activeEl) { if (activeEl) pauseLater(); if (hit) playFor(hit); }
+  }
+  window.addEventListener("pointermove", (e) => { lastX = e.clientX; lastY = e.clientY; xTo(lastX); yTo(lastY); checkTarget(); }, { passive: true });
+  window.addEventListener("scroll", () => { xTo(lastX); yTo(lastY); checkTarget(); }, { passive: true });
+  setTimeout(() => { cursor.setAttribute("data-cursor-marquee-status", "not-active"); }, 500);
+}
+
+// ---- PARALLAX générique ----
+function initParallax() {
+  if (reducedMotion) return;
+  gsap.utils.toArray("[data-parallax]").forEach((el) => {
+    const speed = parseFloat(el.dataset.parallax) || 0.3;
+    gsap.fromTo(el,
+      { yPercent: speed * 50 },
+      { yPercent: -speed * 50, ease: "none",
+        scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: true } }
+    );
+  });
+}
+
+// ---- TITRES : split lignes ----
+// ⚠️ Lignes masquées (mask:"lines" + yPercent:110) : le texte démarre CACHÉ et
+//    n'est révélé que par le ScrollTrigger. Deux garde-fous contre le "texte qui
+//    reste invisible" : (1) en reduced-motion on ne masque pas du tout ;
+//    (2) le reveal a un fallback qui force l'affichage si le trigger ne joue pas.
+function initSplitHeadings() {
+  if (reducedMotion) return; // texte laissé visible tel quel, jamais masqué
+  const headings = nextPage.querySelectorAll('[data-split="heading"]');
+  headings.forEach((heading) => {
+    if (heading.hasAttribute("data-split-done")) return;
+    heading.setAttribute("data-split-done", "");
+    SplitText.create(heading, {
+      type: "lines", autoSplit: true, mask: "lines",
+      onSplit(instance) {
+        return gsap.from(instance.lines, {
+          duration: 0.8, yPercent: 110, stagger: 0.1, ease: "expo.out",
+          scrollTrigger: {
+            trigger: heading,
+            start: "top 80%",
+            once: true,
+            // filet : si pour une raison X le trigger ne joue pas, on force l'état visible
+            onRefresh: (self) => { if (self.progress === 1) gsap.set(instance.lines, { yPercent: 0 }); }
+          }
+        });
+      }
+    });
+  });
+}
+
+// ---- HERO HOME : scaling element on scroll (Flip) ----
+function initFlipOnScroll() {
+  let wrapperElements = document.querySelectorAll("[data-flip-element='wrapper']");
+  let targetEl = document.querySelector("[data-flip-element='target']");
+  if (!wrapperElements.length || !targetEl) return;
+
+  let tl;
+  function flipTimeline() {
+    if (tl) { tl.kill(); gsap.set(targetEl, { clearProps: "all" }); }
+    tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: wrapperElements[0], start: "center center",
+        endTrigger: wrapperElements[wrapperElements.length - 1], end: "center center", scrub: 0.25
+      }
+    });
+    wrapperElements.forEach(function (element, index) {
+      let nextIndex = index + 1;
+      if (nextIndex < wrapperElements.length) {
+        let nextWrapperEl = wrapperElements[nextIndex];
+        let nextRect = nextWrapperEl.getBoundingClientRect();
+        let thisRect = element.getBoundingClientRect();
+        let nextDistance = nextRect.top + window.pageYOffset + nextWrapperEl.offsetHeight / 2;
+        let thisDistance = thisRect.top + window.pageYOffset + element.offsetHeight / 2;
+        let offset = nextDistance - thisDistance;
+        tl.add(Flip.fit(targetEl, nextWrapperEl, { duration: offset, ease: "none" }));
+      }
+    });
+  }
+  flipTimeline();
+  let resizeTimer;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () { flipTimeline(); }, 100);
+  });
+}
+
+// ---- HERO PAGE SERVICE : image → background zoom (Flip) ----
+function initBackgroundZoom() {
+  const containers = document.querySelectorAll("[data-bg-zoom-init]");
+  if (!containers.length) return;
+  let masterTimeline;
+
+  const getScrollRange = ({ trigger, start, endTrigger, end }) => {
+    const st = ScrollTrigger.create({ trigger, start, endTrigger, end });
+    const range = Math.max(1, st.end - st.start);
+    st.kill();
+    return range;
+  };
+
+  const bgZoomTimeline = () => {
+    if (masterTimeline) masterTimeline.kill();
+    masterTimeline = gsap.timeline({
+      defaults: { ease: "none" },
+      scrollTrigger: {
+        trigger: containers[0].querySelector("[data-bg-zoom-start]") || containers[0],
+        start: "clamp(top bottom)",
+        endTrigger: containers[containers.length - 1], end: "bottom top",
+        scrub: true, invalidateOnRefresh: true
+      }
+    });
+
+    containers.forEach((container) => {
+      const startEl = container.querySelector("[data-bg-zoom-start]");
+      const endEl = container.querySelector("[data-bg-zoom-end]");
+      const contentEl = container.querySelector("[data-bg-zoom-content]");
+      const darkEl = container.querySelector("[data-bg-zoom-dark]");
+      const imgEl = container.querySelector("[data-bg-zoom-img]");
+      if (!startEl || !endEl || !contentEl) return;
+
+      const startRadius = getComputedStyle(startEl).borderRadius;
+      const endRadius = getComputedStyle(endEl).borderRadius;
+      const hasRadius = startRadius !== "0px" || endRadius !== "0px";
+      contentEl.style.overflow = hasRadius ? "hidden" : "";
+      if (hasRadius) gsap.set(contentEl, { borderRadius: startRadius });
+
+      Flip.fit(contentEl, startEl, { scale: false });
+
+      const zoomScrollRange = getScrollRange({ trigger: startEl, start: "clamp(top bottom)", endTrigger: endEl, end: "center center" });
+      const afterScrollRange = getScrollRange({ trigger: endEl, start: "center center", endTrigger: container, end: "bottom top" });
+
+      masterTimeline.add(Flip.fit(contentEl, endEl, { duration: zoomScrollRange, ease: "none", scale: false }));
+      if (hasRadius) masterTimeline.to(contentEl, { borderRadius: endRadius, duration: zoomScrollRange }, "<");
+      masterTimeline.to(contentEl, { y: `+=${afterScrollRange}`, duration: afterScrollRange });
+      if (darkEl) { gsap.set(darkEl, { opacity: 0 }); masterTimeline.to(darkEl, { opacity: 0.75, duration: afterScrollRange * 0.25 }, "<"); }
+      if (imgEl) { gsap.set(imgEl, { scale: 1, transformOrigin: "50% 50%" }); masterTimeline.to(imgEl, { scale: 1.25, yPercent: -10, duration: afterScrollRange }, "<"); }
+    });
+    ScrollTrigger.refresh();
+  };
+
+  bgZoomTimeline();
+  let resizeTimer;
+  window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(bgZoomTimeline, 100); });
+}
+
+// ---- STACKING STICKY CARDS (bounce) ----
+function initStackingStickyCardsBounce() {
+  const cardsSections = document.querySelectorAll("[data-stacking-cards-init]");
+  const currentTier = getCurrentViewportTier();
+  window.viewportTier = currentTier;
+
+  ScrollTrigger.getAll().forEach((trigger) => {
+    cardsSections.forEach((section) => { if (section.contains(trigger.trigger)) trigger.kill(); });
+  });
+  cardsSections.forEach((section) => {
+    section.querySelectorAll("[data-stacking-card-target]").forEach((el) => { gsap.killTweensOf(el); gsap.set(el, { clearProps: "all" }); });
+  });
+
+  cardsSections.forEach((section) => {
+    const tier = currentTier;
+    const isEnabled = (tier === "desktop" && section.dataset.stackingCardsDesktop === "true") ||
+      (tier === "tablet" && section.dataset.stackingCardsTablet === "true") ||
+      ((tier === "mobile-portrait" || tier === "mobile-landscape") && section.dataset.stackingCardsMobile === "true");
+    if (!isEnabled) return;
+
+    const cards = Array.from(section.querySelectorAll("[data-stacking-card]"));
+    if (!cards.length) return;
+    const stickyTop = parseFloat(getComputedStyle(cards[0]).top) || 0;
+
+    const rotateValues = tier === "desktop" ? parseRotateValues(section, "data-stacking-cards-desktop-rotate")
+      : tier === "tablet" ? parseRotateValues(section, "data-stacking-cards-tablet-rotate")
+      : parseRotateValues(section, "data-stacking-cards-mobile-rotate");
+    const xValues = tier === "desktop" ? parseAxisValues(section, "data-stacking-cards-desktop-x")
+      : tier === "tablet" ? parseAxisValues(section, "data-stacking-cards-tablet-x")
+      : parseAxisValues(section, "data-stacking-cards-mobile-x");
+    const yValues = tier === "desktop" ? parseAxisValues(section, "data-stacking-cards-desktop-y")
+      : tier === "tablet" ? parseAxisValues(section, "data-stacking-cards-tablet-y")
+      : parseAxisValues(section, "data-stacking-cards-mobile-y");
+
+    cards.forEach((card, index) => {
+      const targetEl = card.querySelector("[data-stacking-card-target]");
+      if (!targetEl) return;
+      const rotate = rotateValues[index % rotateValues.length];
+      const x = xValues[index % xValues.length];
+      const y = yValues[index % yValues.length];
+      gsap.set(targetEl, { rotate: 0, x: 0, y: 0, scale: 1, zIndex: cards.length - index });
+      gsap.to(targetEl, {
+        rotate, x, y, ease: "power1.in", overwrite: "auto",
+        scrollTrigger: { id: `stacking-rotate-${index}`, trigger: card, start: "top 75%", end: `top-=${stickyTop} top`, scrub: true }
+      });
+      ScrollTrigger.create({ id: `stacking-bounce-${index}`, trigger: card, start: `top-=${stickyTop} top`, onEnter: () => pulseElement(targetEl) });
+    });
+  });
+
+  ScrollTrigger.refresh();
+
+  function parseRotateValues(section, attr) {
+    const fallback = [0, 4, -4];
+    const values = (section.getAttribute(attr) || "").split(",").map((v) => parseFloat(v.trim()));
+    return values.length >= 1 && values.every((v) => !isNaN(v)) ? values : fallback;
+  }
+  function parseAxisValues(section, attr) {
+    const raw = section.getAttribute(attr);
+    if (!raw) return ["0em", "0em", "0em"];
+    const values = raw.split(",").map((v) => v.trim()).filter((v) => v !== "");
+    return values.length ? values : ["0em", "0em", "0em"];
+  }
+  if (!window._hasStackingResizeListener) {
+    let last = getCurrentViewportTier();
+    window.addEventListener("resize", debounceOnWidthChange(() => {
+      const next = getCurrentViewportTier();
+      if (last !== next) {
+        ScrollTrigger.getAll().forEach((t) => { if (t.vars?.id?.startsWith("stacking")) t.kill(); });
+        cardsSections.forEach((section) => {
+          section.querySelectorAll("[data-stacking-card-target]").forEach((el) => { gsap.killTweensOf(el); gsap.set(el, { clearProps: "all" }); });
+        });
+        initStackingStickyCardsBounce();
+      }
+      last = next; window.viewportTier = next;
+    }, 250));
+    window._hasStackingResizeListener = true;
+  }
+  function getCurrentViewportTier() {
+    const width = window.innerWidth;
+    if (width <= 479) return "mobile-portrait";
+    if (width <= 767) return "mobile-landscape";
+    if (width <= 991) return "tablet";
+    return "desktop";
+  }
+  function pulseElement(targetEl) {
+    const width = targetEl.offsetWidth, height = targetEl.offsetHeight;
+    const fontSize = parseFloat(getComputedStyle(targetEl).fontSize);
+    const stretchPx = 1.5 * fontSize;
+    const targetScaleX = (width + stretchPx) / width;
+    const targetScaleY = (height - stretchPx * 0.33) / height;
+    const tl = gsap.timeline();
+    tl.to(targetEl, { scaleX: targetScaleX, scaleY: targetScaleY, duration: 0.1, ease: "power1.out" })
+      .to(targetEl, { scaleX: 1, scaleY: 1, duration: 1, ease: "elastic.out(1, 0.3)" });
+  }
+}
+
+// ---- DEPTH TILES (secteurs) ----
+function initDepthTiles() {
+  document.querySelectorAll("[data-depth-tiles-init]").forEach((container) => {
+    const list = container.querySelector("[data-depth-tiles-list]");
+    const tiles = container.querySelectorAll("[data-depth-tiles-item]");
+    const tileCount = tiles.length;
+    if (tileCount < 2) return;
+
+    const xMultiplier = 0.65, backScale = 0.5, backOpacity = 1, backDarkness = 1, sideRotateY = 5, perspective = 75;
+    const moveDuration = 1.5, startDelay = 0.5, pauseDuration = 0.125;
+    const state = { progress: 0 };
+    let isActive = false, isHovering = false, hasStarted = false, stepTimeline, delayedCall, startDelayedCall, activeTileIndex = -1;
+
+    gsap.set(list, { perspective: `${perspective}em` });
+    gsap.set(tiles, { transformStyle: "preserve-3d", transformPerspective: perspective * 16 });
+
+    function getRelativeIndex(index) {
+      let relative = index - state.progress;
+      relative = ((relative + tileCount / 2) % tileCount + tileCount) % tileCount - tileCount / 2;
+      return gsap.utils.clamp(-2, 2, relative);
+    }
+    function getActiveIndex() { return ((Math.round(state.progress) % tileCount) + tileCount) % tileCount; }
+    function updateTileStatus() {
+      const currentActiveIndex = getActiveIndex();
+      if (currentActiveIndex === activeTileIndex) return;
+      activeTileIndex = currentActiveIndex;
+      tiles.forEach((tile, index) => tile.setAttribute("data-depth-tiles-item-status", index === activeTileIndex ? "active" : "not-active"));
+    }
+    function renderDepth() {
+      const tileWidth = tiles[0].offsetWidth;
+      const radiusX = tileWidth * xMultiplier;
+      updateTileStatus();
+      tiles.forEach((tile, index) => {
+        const relative = getRelativeIndex(index);
+        const angle = (relative / 2) * Math.PI;
+        const orbitX = Math.sin(angle) * radiusX;
+        const orbitDepth = (Math.cos(angle) + 1) / 2;
+        const x = relative <= -2 || relative >= 2 ? 0 : orbitX;
+        const scale = gsap.utils.interpolate(backScale, 1, orbitDepth);
+        const opacity = gsap.utils.interpolate(backOpacity, 1, orbitDepth);
+        const brightness = gsap.utils.interpolate(backDarkness, 1, orbitDepth);
+        const rotateY = Math.sin(angle) * -sideRotateY;
+        const zIndex = Math.round(gsap.utils.interpolate(1, 1000, orbitDepth));
+        gsap.set(tile, { x, scale, opacity, rotateY, filter: `brightness(${brightness})`, zIndex });
+      });
+    }
+    function goToNextTile() {
+      if (!isActive || isHovering) return;
+      stepTimeline = gsap.timeline({ paused: true, onComplete: () => { if (isActive && !isHovering) delayedCall = gsap.delayedCall(pauseDuration, goToNextTile); } });
+      stepTimeline.to(state, { progress: state.progress + 1, duration: moveDuration, ease: "depth", onUpdate: renderDepth });
+      stepTimeline.play();
+    }
+    function pauseDepth() { isActive = false; if (stepTimeline) stepTimeline.pause(); if (delayedCall) delayedCall.pause(); if (startDelayedCall) startDelayedCall.pause(); }
+    function playDepth() {
+      isActive = true;
+      if (isHovering) return;
+      if (!hasStarted) { hasStarted = true; startDelayedCall = gsap.delayedCall(startDelay, goToNextTile); return; }
+      if (stepTimeline && stepTimeline.progress() < 1) stepTimeline.play(); else goToNextTile();
+    }
+    function handleHoverStart() { isHovering = true; if (delayedCall) delayedCall.pause(); if (startDelayedCall) startDelayedCall.pause(); }
+    function handleHoverEnd() {
+      isHovering = false;
+      if (!isActive) return;
+      if (!hasStarted) { playDepth(); return; }
+      if (stepTimeline && stepTimeline.progress() < 1) stepTimeline.play(); else goToNextTile();
+    }
+    list.addEventListener("pointerover", (event) => { if (!event.target.closest("[data-depth-tiles-item]")) return; handleHoverStart(); });
+    list.addEventListener("pointerleave", () => handleHoverEnd());
+    renderDepth();
+    ScrollTrigger.create({ trigger: container, start: "top bottom", end: "bottom top", onToggle: (self) => (self.isActive ? playDepth() : pauseDepth()) });
+  });
+}
+
+// ---- ODOMETER (chiffres) ----
+function initNumberOdometer() {
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const initFlag = "data-odometer-initialized";
+  const activeTweens = new WeakMap();
+  const defaults = { duration: 1, ease: "power3.out", elementStagger: 0.1, digitStagger: 0.04, revealDuration: 0.5, revealEase: "power2.out", triggerStart: "top 80%", staggerOrder: "left", digitCycles: 2 };
+
+  document.querySelectorAll("[data-odometer-group]").forEach((group) => {
+    if (group.hasAttribute(initFlag)) return;
+    group.setAttribute(initFlag, "");
+    const elements = Array.from(group.querySelectorAll("[data-odometer-element]"));
+    if (!elements.length || prefersReducedMotion) return;
+
+    const staggerOrder = group.getAttribute("data-odometer-stagger-order") || defaults.staggerOrder;
+    const triggerStart = group.getAttribute("data-odometer-trigger-start") || defaults.triggerStart;
+    const elementStagger = parseFloat(group.getAttribute("data-odometer-stagger")) || defaults.elementStagger;
+
+    const elementData = elements.map((el) => {
+      const originalText = el.textContent.trim();
+      const hasExplicitStart = el.hasAttribute("data-odometer-start");
+      const startValue = parseFloat(el.getAttribute("data-odometer-start")) || 0;
+      const duration = parseFloat(el.getAttribute("data-odometer-duration")) || defaults.duration;
+      const step = getLineHeightRatio(el);
+      let segments = parseSegments(originalText);
+      segments = mapStartDigits(segments, startValue);
+      segments = markHiddenSegments(segments, startValue);
+      const grow = shouldGrow(el, hasExplicitStart, startValue, segments);
+      const { rollers, revealEls } = buildRollerDOM(el, segments, step, grow);
+      const fontSize = parseFloat(getComputedStyle(el).fontSize);
+      const revealData = revealEls.map((revealEl) => { const widthEm = revealEl.offsetWidth / fontSize; gsap.set(revealEl, { width: 0, overflow: "hidden" }); return { el: revealEl, widthEm }; });
+      return { el, rollers, duration, step, revealData, originalText };
+    });
+
+    const ordered = applyStaggerOrder(elementData, staggerOrder);
+    const tl = gsap.timeline({
+      scrollTrigger: { trigger: group, start: triggerStart, once: true },
+      onComplete() { elementData.forEach(({ el, originalText }) => cleanupElement(el, originalText)); }
+    });
+    ordered.forEach((data, orderIdx) => {
+      const { rollers, duration, step, revealData } = data;
+      const offset = orderIdx * elementStagger;
+      revealData.forEach(({ el, widthEm }) => tl.to(el, { width: widthEm + "em", opacity: 1, duration: defaults.revealDuration, ease: defaults.revealEase }, offset));
+      rollers.forEach(({ roller, targetPos }, digitIdx) => {
+        const reversedIdx = rollers.length - 1 - digitIdx;
+        tl.to(roller, { y: -targetPos * step + "em", duration, ease: defaults.ease, force3D: true }, offset + reversedIdx * defaults.digitStagger);
+      });
+    });
+  });
+
+  function getLineHeightRatio(el) { const cs = getComputedStyle(el); const lh = cs.lineHeight; if (lh === "normal") return 1.2; return parseFloat(lh) / parseFloat(cs.fontSize); }
+  function parseSegments(text) { return [...text].map((char) => ({ type: /\d/.test(char) ? "digit" : "static", char })); }
+  function mapStartDigits(segments, startValue) {
+    const digitSlots = segments.filter((s) => s.type === "digit");
+    const padded = String(Math.floor(Math.abs(startValue))).padStart(digitSlots.length, "0").slice(-digitSlots.length);
+    let di = 0;
+    return segments.map((s) => (s.type === "digit" ? { ...s, startDigit: parseInt(padded[di++], 10) } : s));
+  }
+  function markHiddenSegments(segments, startValue) {
+    const totalDigits = segments.filter((s) => s.type === "digit").length;
+    const absStart = Math.floor(Math.abs(startValue));
+    const startDigitCount = absStart === 0 ? 1 : String(absStart).length;
+    const leadingZeros = Math.max(0, totalDigits - startDigitCount);
+    if (leadingZeros === 0) return segments;
+    let digitsSeen = 0, firstDigitSeen = false, prevDigitHidden = false;
+    return segments.map((seg) => {
+      if (seg.type === "digit") { firstDigitSeen = true; const hidden = digitsSeen < leadingZeros; prevDigitHidden = hidden; digitsSeen++; return { ...seg, hidden }; }
+      const hidden = firstDigitSeen && prevDigitHidden;
+      return { ...seg, hidden };
+    });
+  }
+  function shouldGrow(el, hasExplicitStart, startValue, segments) {
+    if (el.hasAttribute("data-odometer-grow")) return el.getAttribute("data-odometer-grow") !== "false";
+    if (!hasExplicitStart) return false;
+    const absStart = Math.floor(Math.abs(startValue));
+    const startDigitCount = absStart === 0 ? 1 : String(absStart).length;
+    const endDigitCount = segments.filter((s) => s.type === "digit").length;
+    return startDigitCount < endDigitCount;
+  }
+  function buildRollerDOM(el, segments, step, grow) {
+    el.innerHTML = ""; el.style.height = "";
+    const rollers = [], revealEls = [];
+    const totalCells = 10 * defaults.digitCycles;
+    segments.forEach((seg) => {
+      if (seg.type === "static") {
+        const span = document.createElement("span");
+        span.setAttribute("data-odometer-part", "static");
+        span.style.height = step + "em"; span.style.lineHeight = step; span.textContent = seg.char;
+        el.appendChild(span);
+        if (grow && seg.hidden) { gsap.set(span, { opacity: 0 }); revealEls.push(span); }
+        return;
+      }
+      const mask = document.createElement("span");
+      mask.setAttribute("data-odometer-part", "mask"); mask.style.height = step + "em"; mask.style.lineHeight = step;
+      const roller = document.createElement("span");
+      roller.setAttribute("data-odometer-part", "roller"); roller.style.lineHeight = step;
+      const digits = [];
+      for (let d = 0; d < totalCells; d++) digits.push(d % 10);
+      roller.textContent = digits.join("\n");
+      mask.appendChild(roller); el.appendChild(mask);
+      const startDigit = seg.startDigit || 0;
+      const isReveal = grow && seg.hidden;
+      gsap.set(roller, { y: isReveal ? step + "em" : -startDigit * step + "em" });
+      const endDigit = parseInt(seg.char, 10);
+      const targetPos = endDigit > startDigit ? endDigit : 10 + endDigit;
+      rollers.push({ roller, targetPos });
+      if (isReveal) revealEls.push(mask);
+    });
+    return { rollers, revealEls };
+  }
+  function cleanupElement(el, originalText) {
+    el.style.overflow = ""; el.style.height = "";
+    const digits = [...originalText].filter((c) => /\d/.test(c));
+    let di = 0;
+    el.querySelectorAll('[data-odometer-part="mask"]').forEach((mask) => {
+      const roller = mask.querySelector('[data-odometer-part="roller"]');
+      if (roller) roller.remove();
+      mask.textContent = digits[di++] || ""; mask.style.opacity = ""; mask.style.overflow = "";
+    });
+    el.querySelectorAll('[data-odometer-part="static"]').forEach((stat) => { stat.style.opacity = ""; });
+  }
+  function applyStaggerOrder(items, order) { const arr = [...items]; if (order === "right") return arr.reverse(); if (order === "random") return shuffleArray(arr); return arr; }
+  function shuffleArray(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+}
+
+// ---- LOGO WALL ----
+function initLogoWallCycle() {
+  const loopDelay = 1.5, duration = 0.9;
+  document.querySelectorAll("[data-logo-wall-cycle-init]").forEach((root) => {
+    const list = root.querySelector("[data-logo-wall-list]");
+    const items = Array.from(list.querySelectorAll("[data-logo-wall-item]"));
+    const shuffleFront = root.getAttribute("data-logo-wall-shuffle") !== "false";
+    const originalTargets = items.map((item) => item.querySelector("[data-logo-wall-target]")).filter(Boolean);
+    let visibleItems = [], visibleCount = 0, pool = [], pattern = [], patternIndex = 0, tl;
+
+    function isVisible(el) { return window.getComputedStyle(el).display !== "none"; }
+    function shuffleArray(arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+    function setup() {
+      if (tl) tl.kill();
+      visibleItems = items.filter(isVisible);
+      visibleCount = visibleItems.length;
+      pattern = shuffleArray(Array.from({ length: visibleCount }, (_, i) => i));
+      patternIndex = 0;
+      items.forEach((item) => item.querySelectorAll("[data-logo-wall-target]").forEach((old) => old.remove()));
+      pool = originalTargets.map((n) => n.cloneNode(true));
+      let front, rest;
+      if (shuffleFront) { const shuffledAll = shuffleArray(pool); front = shuffledAll.slice(0, visibleCount); rest = shuffleArray(shuffledAll.slice(visibleCount)); }
+      else { front = pool.slice(0, visibleCount); rest = shuffleArray(pool.slice(visibleCount)); }
+      pool = front.concat(rest);
+      for (let i = 0; i < visibleCount; i++) {
+        const parent = visibleItems[i].querySelector("[data-logo-wall-target-parent]") || visibleItems[i];
+        parent.appendChild(pool.shift());
+      }
+      tl = gsap.timeline({ repeat: -1, repeatDelay: loopDelay });
+      tl.call(swapNext); tl.play();
+    }
+    function swapNext() {
+      const nowCount = items.filter(isVisible).length;
+      if (nowCount !== visibleCount) { setup(); return; }
+      if (!pool.length) return;
+      const idx = pattern[patternIndex % visibleCount];
+      patternIndex++;
+      const container = visibleItems[idx];
+      const parent = container.querySelector("[data-logo-wall-target-parent]") || container.querySelector("*:has(> [data-logo-wall-target])") || container;
+      const existing = parent.querySelectorAll("[data-logo-wall-target]");
+      if (existing.length > 1) return;
+      const current = parent.querySelector("[data-logo-wall-target]");
+      const incoming = pool.shift();
+      gsap.set(incoming, { yPercent: 50, autoAlpha: 0 });
+      parent.appendChild(incoming);
+      if (current) gsap.to(current, { yPercent: -50, autoAlpha: 0, duration, ease: "expo.inOut", onComplete: () => { current.remove(); pool.push(current); } });
+      gsap.to(incoming, { yPercent: 0, autoAlpha: 1, duration, delay: 0.1, ease: "expo.inOut" });
+    }
+    setup();
+    ScrollTrigger.create({ trigger: root, start: "top bottom", end: "bottom top", onEnter: () => tl.play(), onLeave: () => tl.pause(), onEnterBack: () => tl.play(), onLeaveBack: () => tl.pause() });
+    document.addEventListener("visibilitychange", () => (document.hidden ? tl.pause() : tl.play()));
+  });
+}
+
+// ---- 3D CARDS TORNADO (réalisations) ----
+function init3DCardsTornado() {
+  const containers = gsap.utils.toArray("[data-3d-tornado-init]");
+  const rotationAngle = 30, cardYSpacing = 0.3, edgeOffset = 2, orbitDepth = 62, autoSpeed = 0.00325, scrollSpeed = 0.015, dragMultiplier = 5, scrollEase = 0.1, maxSpeed = 0.2, edgeScale = 0.5, minScale = 1, backDarkness = 0.75, backBlur = 0.5;
+  const edgeEase = gsap.parseEase("power2.inOut");
+
+  containers.forEach((container) => {
+    const list = container.querySelector("[data-3d-tornado-list]");
+    const originalCards = gsap.utils.toArray("[data-3d-tornado-item]", list).map((card) => card.cloneNode(true));
+    if (!list || !originalCards.length) return;
+    let inputObserver, resizeTimer;
+    const state = { amount: 0, progress: 0, velocity: autoSpeed, direction: 1, cardHeight: 0, cardGap: 0, em: 16, isActive: false, isHover: false, cards: [] };
+
+    function getCardAmount() {
+      const containerHalfHeight = container.offsetHeight * 0.5;
+      const edgeOffsetDistance = state.cardHeight * edgeOffset;
+      const fadeDistance = state.cardHeight * edgeScale;
+      const neededDistance = containerHalfHeight + edgeOffsetDistance + fadeDistance;
+      const cardsPerSide = Math.ceil(neededDistance / state.cardGap) + 1;
+      const neededAmount = cardsPerSide * 2 + 1;
+      const batchCount = Math.ceil(neededAmount / originalCards.length);
+      return originalCards.length * batchCount;
+    }
+    function buildCards() {
+      list.innerHTML = "";
+      const measureCard = originalCards[0].cloneNode(true);
+      list.appendChild(measureCard);
+      state.cardHeight = measureCard.offsetHeight;
+      state.cardGap = state.cardHeight * cardYSpacing;
+      state.em = parseFloat(getComputedStyle(measureCard).fontSize);
+      state.amount = getCardAmount();
+      list.innerHTML = "";
+      for (let i = 0; i < state.amount; i++) { const card = originalCards[i % originalCards.length].cloneNode(true); card.dataset.index = i; list.appendChild(card); }
+      state.cards = gsap.utils.toArray("[data-3d-tornado-item]", list);
+    }
+    function getEdgeScale(y) {
+      const containerHalfHeight = container.offsetHeight * 0.5;
+      const edgeOffsetDistance = state.cardHeight * edgeOffset;
+      const fadeDistance = state.cardHeight * edgeScale;
+      const distanceFromCenter = Math.abs(y);
+      const fadeStart = containerHalfHeight + edgeOffsetDistance;
+      const progress = gsap.utils.clamp(0, 1, (fadeStart - distanceFromCenter) / fadeDistance);
+      return edgeEase(progress);
+    }
+    function render() {
+      const radius = orbitDepth * state.em;
+      state.cards.forEach((card) => {
+        const startIndex = parseFloat(card.dataset.index);
+        const loopIndex = ((startIndex + state.progress) % state.amount + state.amount) % state.amount;
+        const index = loopIndex > state.amount * 0.5 ? loopIndex - state.amount : loopIndex;
+        const angleDeg = index * rotationAngle;
+        const angleRad = (angleDeg * Math.PI) / 180;
+        const center = 1 - Math.min(Math.abs(index) / (state.amount * 0.5), 1);
+        const y = index * state.cardGap;
+        const baseScale = minScale + center * (1 - minScale);
+        const scale = baseScale * getEdgeScale(y);
+        const backAmount = gsap.utils.clamp(0, 1, (1 - Math.cos(angleRad)) * 0.5);
+        const brightness = 1 - backAmount * backDarkness;
+        const blur = backAmount * backBlur;
+        gsap.set(card, { xPercent: -50, yPercent: -50, x: Math.sin(angleRad) * radius, y, z: (Math.cos(angleRad) - 1) * radius, rotateY: angleDeg, scale, filter: `brightness(${brightness}) blur(${blur}em)`, autoAlpha: 1, zIndex: Math.round(center * 1000) });
+      });
+    }
+    function tick() {
+      if (!state.isActive) return;
+      const targetVelocity = autoSpeed * state.direction;
+      state.velocity = gsap.utils.interpolate(state.velocity, targetVelocity, scrollEase);
+      state.progress += state.velocity;
+      render();
+    }
+    function handleInput(self) {
+      if (!state.isActive) return;
+      const delta = self.event.type === "wheel" ? self.deltaY : Math.abs(self.deltaX) > Math.abs(self.deltaY) ? self.deltaX * dragMultiplier : self.deltaY * dragMultiplier;
+      if (!delta) return;
+      state.direction = delta > 0 ? 1 : -1;
+      state.velocity += (delta * scrollSpeed) / 100;
+      state.velocity = gsap.utils.clamp(-maxSpeed, maxSpeed, state.velocity);
+    }
+    function setActive(isActive) { state.isActive = isActive; if (!inputObserver) return; isActive ? inputObserver.enable() : inputObserver.disable(); }
+    function rebuild() { buildCards(); render(); }
+    rebuild();
+    inputObserver = Observer.create({ target: window, type: "wheel,touch,pointer", preventDefault: false, lockAxis: true, onChange: handleInput, onPress: () => { container.style.cursor = "grabbing"; }, onRelease: () => { container.style.cursor = "grab"; } });
+    ScrollTrigger.create({ trigger: container, start: "top bottom", end: "bottom top", onEnter: () => setActive(true), onEnterBack: () => setActive(true), onLeave: () => setActive(false), onLeaveBack: () => setActive(false) });
+    setActive(ScrollTrigger.isInViewport(container));
+    gsap.ticker.add(tick);
+    window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { rebuild(); ScrollTrigger.refresh(); }, 150); });
+  });
+}
+
+// ---- FOOTER PARALLAX ----
+function initFooterParallax() {
+  document.querySelectorAll("[data-footer-parallax]").forEach((el) => {
+    const tl = gsap.timeline({ scrollTrigger: { trigger: el, start: "clamp(top bottom)", end: "clamp(top top)", scrub: true } });
+    const inner = el.querySelector("[data-footer-parallax-inner]");
+    const dark = el.querySelector("[data-footer-parallax-dark]");
+    if (inner) tl.from(inner, { yPercent: -25, ease: "linear" });
+    if (dark) tl.from(dark, { opacity: 0.5, ease: "linear" }, "<");
+  });
+}
+
+
+// -----------------------------------------
+// GO
+// -----------------------------------------
+if (document.readyState !== "loading") boot();
+else document.addEventListener("DOMContentLoaded", boot);

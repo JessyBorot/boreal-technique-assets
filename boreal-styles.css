@@ -1,0 +1,146 @@
+/* =====================================================
+   BORÉAL — styles.css  (global, chargé une fois via le HEAD)
+   Styles des modules déplacés hors des embeds de page.
+   NOTE : `.hero-halo` est PAGE-SPÉCIFIQUE (aurora sur l'accueil,
+   mono sur les pages service) → à garder en embed par page, pas ici.
+   ===================================================== */
+
+/* angle animable — pour les liserés tournants (conic-gradient) */
+@property --brd-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes brd-spin { to { --brd-angle: 360deg; } }
+
+
+/* ===== NAV two-step scaling ===== */
+[data-twostep-nav]{
+  --cubic-default: cubic-bezier(0.625, 0.05, 0, 1);
+  --animation-ease: 0.2s ease;
+  --duration-default: 0.5s;
+  --duration-default-long: 0.75s;
+  --duration-default-half: 0.25s;
+  --animation-default: var(--duration-default) var(--cubic-default);
+  --animation-default-long: var(--duration-default-long) var(--cubic-default);
+  --animation-default-half: var(--duration-default-half) var(--cubic-default);
+}
+.twostep-nav__toggle-bar{ transition: transform var(--animation-default); transform: translateY(-0.25em) rotate(0.001deg); }
+.twostep-nav__toggle:hover .twostep-nav__toggle-bar { transform: translateY(0.25em) rotate(0.001deg); }
+.twostep-nav__toggle .twostep-nav__toggle-bar:nth-child(2) { transform: translateY(0.15em) rotate(0.001deg); }
+.twostep-nav__toggle:hover .twostep-nav__toggle-bar:nth-child(2) { transform: translateY(-0.15em) rotate(0.001deg); }
+[data-nav-status="active"] .twostep-nav__toggle .twostep-nav__toggle-bar { transform: translateY(0em) rotate(45deg); }
+[data-nav-status="active"] .twostep-nav__toggle .twostep-nav__toggle-bar:nth-child(2) { transform: translateY(0em) rotate(-45deg); }
+.twostep-nav__bg { transition: opacity var(--animation-default), visibility var(--animation-default); }
+[data-nav-status="active"] .twostep-nav__bg { opacity: 1; visibility: visible; }
+.twostep-nav__bar { transition: max-width var(--animation-default-long) 0.2s; }
+[data-nav-status="active"] .twostep-nav__bar { transition: max-width var(--animation-default) 0s; max-width: 100%; }
+.twostep-nav__top-line { transition: all var(--animation-default) 0s; opacity: 0; }
+[data-nav-status="active"] .twostep-nav__top-line { transition: all var(--animation-default) 0.1s; opacity: 1; }
+@media screen and (max-width: 767px) {
+  .twostep-nav__top-line { inset: auto 1em -0.5em; }
+  [data-nav-status="active"] .twostep-nav__top-line { transition: all var(--animation-default) 0.2s; inset: auto 0em -0.5em; }
+}
+.twostep-nav__bar__bg,
+[data-nav-status="active"] .twostep-nav__back-bg{ transition: background-color var(--animation-ease); }
+.twostep-nav__back{ transition: all var(--animation-default); inset: 0em; }
+[data-nav-status="active"] .twostep-nav__back { inset: -0.25em; }
+@media screen and (max-width: 767px) { [data-nav-status="active"] .twostep-nav__back { inset: -1.25em; } }
+.twostep-nav__bottom { transition: grid-template-rows var(--animation-default) 0s; }
+[data-nav-status="active"] .twostep-nav__bottom { transition: grid-template-rows var(--animation-default-long) 0.25s; grid-template-rows: 1fr; }
+@media screen and (max-width: 767px) {
+  .twostep-nav__bottom { transition: grid-template-rows var(--animation-default) 0s, transform var(--animation-default) 0s; transform: translateY(-0.625em); }
+  [data-nav-status="active"] .twostep-nav__bottom { transition: grid-template-rows var(--animation-default-long) 0.25s, transform var(--animation-default) 0.25s; transform: translateY(0em); }
+}
+.twostep-nav__bottom-row > * { transition: all var(--animation-default) 0s; transform: translateY(2em); opacity: 0; }
+.twostep-nav__bottom-row > *:nth-child(2) { transition-delay: 0.075s; }
+[data-nav-status="active"] .twostep-nav__bottom-row > * { transition: all var(--animation-default-long) 0.5s; transform: translateY(0em); opacity: 1; }
+[data-nav-status="active"] .twostep-nav__bottom-row > *:nth-child(2) { transition-delay: 0.575s; }
+
+
+/* ===== CURSEUR marquee ===== */
+.cursor-marquee__card {
+  transition: all 0.4s cubic-bezier(.75, 0, .25, 1);
+  transform: translateY(0%) rotate(0.001deg);
+  clip-path: inset(calc(50% - 0.25em) round 50em);
+  will-change: clip-path;
+  opacity: 0;
+}
+[data-cursor-marquee-status="active"] .cursor-marquee__card { clip-path: inset(0 round 50em); transform: translateY(-25%) rotate(0.001deg); }
+[data-cursor-marquee-status="not-active"] .cursor-marquee__card,
+[data-cursor-marquee-status="active"] .cursor-marquee__card { opacity: 1; }
+@keyframes translateXCursor { to { transform: translateX(-100%); } }
+.cursor-marquee__text-span { animation: translateXCursor 10s linear infinite paused; transition: opacity 0.15s ease-in-out 0.25s; opacity: 0; }
+[data-cursor-marquee-status="active"] .cursor-marquee__text-span { transition: opacity 0.15s ease-in-out 0s; opacity: 1; }
+@media (hover: none) and (pointer: coarse) { [data-cursor-marquee-status] { display: none; } }
+
+
+/* ===== STACKING CARDS (services) — liseré tournant ===== */
+.cards-stack-card { --rgb: 41,182,255; --speed: 4.5s; --thickness: 1.6px; position: relative; isolation: isolate; box-shadow: 0 0 0 1px rgba(var(--rgb), .16); }
+.cards-stack-card::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: var(--thickness);
+  background: conic-gradient(from var(--brd-angle), rgba(var(--rgb), 0) 0deg, rgba(var(--rgb), 0) 60deg, rgba(var(--rgb), .85) 90deg, rgba(var(--rgb), .15) 120deg, rgba(var(--rgb), 0) 170deg, rgba(var(--rgb), 0) 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; animation: brd-spin var(--speed) linear infinite; pointer-events: none; z-index: 2;
+}
+.cards-stack-card.first { --rgb: 41,182,255; }
+.cards-stack-card.scnd  { --rgb: 74,222,128; }
+.cards-stack-card.third { --rgb: 244,63,94; }
+.cards-stack-card.four  { --rgb: 99,102,241; }
+@media (prefers-reduced-motion: reduce) {
+  .cards-stack-card::before { animation: none; background: linear-gradient(120deg, rgba(var(--rgb), 0), rgba(var(--rgb), .6), rgba(var(--rgb), 0)); }
+}
+
+
+/* ===== DEPTH TILES (secteurs) ===== */
+[data-depth-tiles-item] .demo-card { transition: transform 0.4s cubic-bezier(0.35, 1.5, 0.6, 1); transform: scale(1) rotate(0.001deg); }
+[data-depth-tiles-item]:hover .demo-card { transform: scale(0.95) rotate(0.001deg); }
+:is(.wf-design-mode, .wf-editor) .depth-tiles__collection { overflow: scroll; }
+:is(.wf-design-mode, .wf-editor) .depth-tiles__list { display: flex; max-width: 100vw; }
+
+
+/* ===== ODOMETER ===== */
+[data-odometer-element] { display: inline-flex; align-items: center; font-variant-numeric: tabular-nums; }
+[data-odometer-part="mask"], [data-odometer-part="static"] { display: inline-block; overflow: clip; padding: 0.05em; margin: -0.05em; }
+[data-odometer-part="roller"] { display: block; white-space: pre; text-align: center; will-change: transform; }
+[data-odometer-part="static"] { display: inline-block; }
+
+
+/* ===== STATS26 (cartes chiffres page service) — liseré tournant ===== */
+.stats26_item { --rgb: 255,166,43; --speed: 4.5s; --thickness: 1.6px; position: relative; isolation: isolate; box-shadow: 0 0 0 1px rgba(var(--rgb), .16); }
+.stats26_item::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: var(--thickness);
+  background: conic-gradient(from var(--brd-angle), rgba(var(--rgb), 0) 0deg, rgba(var(--rgb), 0) 60deg, rgba(var(--rgb), .85) 90deg, rgba(var(--rgb), .15) 120deg, rgba(var(--rgb), 0) 170deg, rgba(var(--rgb), 0) 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; animation: brd-spin var(--speed) linear infinite; pointer-events: none; z-index: 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .stats26_item::before { animation: none; background: linear-gradient(120deg, rgba(var(--rgb), 0), rgba(var(--rgb), .6), rgba(var(--rgb), 0)); }
+}
+
+
+/* ===== LOGO WALL — ⚠️ pilote la LOGIQUE JS (isVisible) : ne pas retirer ===== */
+[data-logo-wall-list] [data-logo-wall-item]:nth-child(n+9) { display: none; }
+@media screen and (max-width: 991px) {
+  [data-logo-wall-list] [data-logo-wall-item]:nth-child(n+7) { display: none; }
+}
+
+
+/* ===== 3D TORNADO (réalisations) ===== */
+:is(.wf-design-mode, .wf-editor) [data-3d-tornado-list] { display: flex; align-items: center; gap: 1em; overflow: scroll; max-width: 100vw; }
+:is(.wf-design-mode, .wf-editor) [data-3d-tornado-item] { position: relative; top: unset; left: unset; transform: unset; }
+.cards-tornado__item .cover-image { transition: filter .5s cubic-bezier(.625,.05,0,1); }
+.cards-tornado__item:hover .cover-image { filter: brightness(.4); }
+.cards-tornado__item .tag { z-index: 2; opacity: 0; transform: translateY(-.6em); transition: opacity .5s cubic-bezier(.625,.05,0,1), transform .5s cubic-bezier(.625,.05,0,1); }
+.cards-tornado__item:hover .tag { opacity: 1; transform: translateY(0); }
+
+
+/* ===== FOOTER — lien qui se remplit ===== */
+.demo-footer__a {
+  --fill: #ffa62b; --base: #ffffff;
+  background-image: linear-gradient(to right, var(--fill) 50%, var(--base) 50%);
+  background-size: 200% 100%; background-position: 100% 0;
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+  transition: background-position .45s cubic-bezier(.625,.05,0,1);
+}
+.demo-footer__a:hover { background-position: 0 0; }
