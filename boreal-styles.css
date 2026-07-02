@@ -141,6 +141,41 @@
 [data-modal-name][data-modal-status="active"] { display: flex; }
 
 
+/* ===== SLIDER CENTRÉ (Osmo témoignages) ===== */
+.centered-slider-bullet::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 100em;
+  z-index: -1;
+  border: 1px solid #FF4C24;
+  transition: all 0.5s cubic-bezier(0.65, 0.05, 0, 1);
+}
+.centered-slider-bullet:hover::after,
+.centered-slider-bullet.active::after,
+.centered-slider-bullet:focus::after { inset: -5px; }
+
+.centered-slider-row:has(.centered-slider-slide.active) .centered-slider-slide:not(.active) { opacity: 0.45; }
+
+.centered-slider-slide::after {
+  --size: 1em; --width: 1px; --gap: 0.5em; --color: #FF4C24;
+  content: '';
+  position: absolute;
+  inset: calc(var(--gap) * -1);
+  z-index: 1;
+  opacity: 0;
+  padding: calc(var(--gap) + var(--width));
+  outline: var(--width) solid var(--color);
+  outline-offset: calc(var(--gap)/-1);
+  mask:
+    conic-gradient(at var(--size) var(--size),#0000 75%,#000 0)
+    0 0/calc(100% - var(--size)) calc(100% - var(--size)),
+    linear-gradient(#000 0 0) content-box;
+  transition: all 0.4s cubic-bezier(0.65, 0.05, 0, 1);
+}
+.centered-slider-slide.active::after { outline-offset: calc(-1*var(--width)); opacity: 1; }
+
+
 /* ===== ÉTAPES STICKY (Osmo) — états before/active/after ===== */
 @media screen and (min-width: 992px) {
   [data-sticky-steps-item-status] .sticky-steps__visual {
