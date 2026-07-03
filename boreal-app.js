@@ -88,6 +88,7 @@ function runPageModulesOnce(container) {
     initSplitHeadings,
     initFlipOnScroll,        // hero home
     initBackgroundZoom,      // hero page service
+    initParallaxLayers,      // hero page réalisation (T07) — parallax image layers Osmo
     initStackingStickyCardsBounce,
     initDepthTiles,
     initModalBasic,          // pop-ups (Osmo modal B) — secteurs T02
@@ -413,6 +414,35 @@ function initGlobalParallax() {
       return () => ctx.revert();
     }
   );
+}
+
+// ---- PARALLAX IMAGE LAYERS (Osmo) — hero page Réalisation (T07) ----
+// [data-parallax-layers] = wrapper déclencheur ; [data-parallax-layer="1..4"] = couches
+// (1 = la plus rapide → 4 = la plus subtile). GSAP + ScrollTrigger déjà chargés/registrés (head).
+let _parallaxLayersCtx;
+function initParallaxLayers() {
+  if (_parallaxLayersCtx) _parallaxLayersCtx.revert(); // nettoie l'init précédente (Barba)
+  if (rmMQ.matches) return;                            // reduced-motion : couches statiques
+  _parallaxLayersCtx = gsap.context(() => {
+    document.querySelectorAll("[data-parallax-layers]").forEach((triggerElement) => {
+      const tl = gsap.timeline({
+        scrollTrigger: { trigger: triggerElement, start: "0% 0%", end: "100% 0%", scrub: 0 }
+      });
+      const layers = [
+        { layer: "1", yPercent: 70 },
+        { layer: "2", yPercent: 55 },
+        { layer: "3", yPercent: 40 },
+        { layer: "4", yPercent: 10 }
+      ];
+      layers.forEach((layerObj, idx) => {
+        tl.to(
+          triggerElement.querySelectorAll(`[data-parallax-layer="${layerObj.layer}"]`),
+          { yPercent: layerObj.yPercent, ease: "none" },
+          idx === 0 ? undefined : "<"
+        );
+      });
+    });
+  });
 }
 
 // ---- REVEAL ON SCROLL (Osmo elements reveal) ----
