@@ -76,19 +76,19 @@
 
 
 /* ===== STACKING CARDS (services) — liseré tournant ===== */
-.cards-stack-card { --rgb: 41,182,255; --speed: 4.5s; --thickness: 1.6px; position: relative; isolation: isolate; box-shadow: 0 0 0 1px rgba(var(--rgb), .16); }
+.cards-stack-card { --c: var(--_primitives---colors--dodger-blue); --speed: 4.5s; --thickness: 1.6px; position: relative; isolation: isolate; box-shadow: 0 0 0 1px rgb(from var(--c) r g b / .16); }
 .cards-stack-card::before {
   content: ''; position: absolute; inset: 0; border-radius: inherit; padding: var(--thickness);
-  background: conic-gradient(from var(--brd-angle), rgba(var(--rgb), 0) 0deg, rgba(var(--rgb), 0) 60deg, rgba(var(--rgb), .85) 90deg, rgba(var(--rgb), .15) 120deg, rgba(var(--rgb), 0) 170deg, rgba(var(--rgb), 0) 360deg);
+  background: conic-gradient(from var(--brd-angle), rgb(from var(--c) r g b / 0) 0deg, rgb(from var(--c) r g b / 0) 60deg, rgb(from var(--c) r g b / .85) 90deg, rgb(from var(--c) r g b / .15) 120deg, rgb(from var(--c) r g b / 0) 170deg, rgb(from var(--c) r g b / 0) 360deg);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude; animation: brd-spin var(--speed) linear infinite; pointer-events: none; z-index: 2;
 }
-.cards-stack-card.first { --rgb: 41,182,255; }
-.cards-stack-card.scnd  { --rgb: 74,222,128; }
-.cards-stack-card.third { --rgb: 244,63,94; }
-.cards-stack-card.four  { --rgb: 99,102,241; }
+.cards-stack-card.first { --c: var(--_primitives---colors--dodger-blue); }   /* Intérieurs */
+.cards-stack-card.scnd  { --c: var(--_primitives---colors--shamrock); }      /* Extérieurs */
+.cards-stack-card.third { --c: var(--_primitives---colors--carnation); }     /* Scènes mobiles */
+.cards-stack-card.four  { --c: var(--_primitives---colors--cornflower-blue); } /* Installations */
 @media (prefers-reduced-motion: reduce) {
-  .cards-stack-card::before { animation: none; background: linear-gradient(120deg, rgba(var(--rgb), 0), rgba(var(--rgb), .6), rgba(var(--rgb), 0)); }
+  .cards-stack-card::before { animation: none; background: linear-gradient(120deg, rgb(from var(--c) r g b / 0), rgb(from var(--c) r g b / .6), rgb(from var(--c) r g b / 0)); }
 }
 
 
@@ -107,15 +107,15 @@
 
 
 /* ===== STATS26 (cartes chiffres page service) — liseré tournant ===== */
-.stats26_item { --rgb: 255,166,43; --speed: 4.5s; --thickness: 1.6px; position: relative; isolation: isolate; box-shadow: 0 0 0 1px rgba(var(--rgb), .16); }
+.stats26_item { --c: var(--_primitives---colors--sunshade); --speed: 4.5s; --thickness: 1.6px; position: relative; isolation: isolate; box-shadow: 0 0 0 1px rgb(from var(--c) r g b / .16); }
 .stats26_item::before {
   content: ''; position: absolute; inset: 0; border-radius: inherit; padding: var(--thickness);
-  background: conic-gradient(from var(--brd-angle), rgba(var(--rgb), 0) 0deg, rgba(var(--rgb), 0) 60deg, rgba(var(--rgb), .85) 90deg, rgba(var(--rgb), .15) 120deg, rgba(var(--rgb), 0) 170deg, rgba(var(--rgb), 0) 360deg);
+  background: conic-gradient(from var(--brd-angle), rgb(from var(--c) r g b / 0) 0deg, rgb(from var(--c) r g b / 0) 60deg, rgb(from var(--c) r g b / .85) 90deg, rgb(from var(--c) r g b / .15) 120deg, rgb(from var(--c) r g b / 0) 170deg, rgb(from var(--c) r g b / 0) 360deg);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude; animation: brd-spin var(--speed) linear infinite; pointer-events: none; z-index: 2;
 }
 @media (prefers-reduced-motion: reduce) {
-  .stats26_item::before { animation: none; background: linear-gradient(120deg, rgba(var(--rgb), 0), rgba(var(--rgb), .6), rgba(var(--rgb), 0)); }
+  .stats26_item::before { animation: none; background: linear-gradient(120deg, rgb(from var(--c) r g b / 0), rgb(from var(--c) r g b / .6), rgb(from var(--c) r g b / 0)); }
 }
 
 
@@ -146,7 +146,7 @@
 
 /* Le contenu de page recouvre le panneau (fixed, z-index:1) tant qu'il n'a pas
    coulissé. Fond opaque obligatoire, sinon le panneau se voit par transparence. */
-[data-main] { position: relative; z-index: 2; background-color: #030405; }
+[data-main] { position: relative; z-index: 2; background-color: var(--_primitives---colors--neutral-darkest); }
 @media screen and (max-width: 767px) { :root { --menu-width: 80vw; } }
 
 /* Aperçu dans le Designer : mettre data-menu-status="open" sur le body.
@@ -176,7 +176,7 @@
   inset: 2px;
   border-radius: 100em;
   z-index: -1;
-  border: 1px solid #ffa62b;
+  border: var(--_ui-styles---stroke--border-width) solid var(--_primitives---colors--sunshade);
   transition: all 0.5s cubic-bezier(0.65, 0.05, 0, 1);
 }
 .centered-slider-bullet:hover::after,
@@ -186,7 +186,7 @@
 .centered-slider-row:has(.centered-slider-slide.active) .centered-slider-slide:not(.active) { opacity: 0.45; }
 
 .centered-slider-slide::after {
-  --size: 1em; --width: 1px; --gap: 0.5em; --color: #ffa62b;
+  --size: 1em; --width: var(--_ui-styles---stroke--border-width); --gap: 0.5em; --color: var(--_primitives---colors--sunshade);
   content: '';
   position: absolute;
   inset: calc(var(--gap) * -1);
@@ -240,7 +240,7 @@
 
 /* ===== FOOTER — lien qui se remplit ===== */
 .demo-footer__a {
-  --fill: #ffa62b; --base: #ffffff;
+  --fill: var(--_primitives---colors--sunshade); --base: var(--_primitives---colors--white);
   background-image: linear-gradient(to right, var(--fill) 50%, var(--base) 50%);
   background-size: 200% 100%; background-position: 100% 0;
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
