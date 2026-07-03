@@ -15,6 +15,8 @@ Fichiers statiques (JS/CSS) servis en CDN via **jsDelivr** pour le site Webflow
 - `.underlay-nav__inner` : `data-lenis-prevent` (posé en JS) + `max-height:100svh; overflow-y:auto`
   pour scroller le formulaire quand il dépasse l'écran.
 - Champs restylés pour le thème sombre (fond/texte/placeholder via tokens Primitives) au lieu du blanc Webflow.
+  Inclut un override `:-webkit-autofill` (le fond blanc/pâle forcé par Chrome/Arc n'est pas surchargeable
+  par `background-color` → repeint via `box-shadow` interne + `-webkit-text-fill-color`).
 - Validation live (`initAdvancedFormValidation`) : pose `.is--filled/.is--success/.is--error`.
   Requiert `[data-form-validate]` (parent), `[data-validate]` (chaque groupe), `[data-submit]`
   (autour du `input[type=submit]`). Couleur d'erreur = token `--_primitives---colors--carnation`.
