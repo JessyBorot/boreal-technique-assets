@@ -276,6 +276,18 @@
 .underlay-nav__inner :is(input, textarea)::placeholder {
   color: rgb(from var(--_primitives---colors--white) r g b / 0.4);
 }
+/* Autofill navigateur : le fond blanc/jaune forcé par Chrome/Arc n'est PAS surchargeable
+   par background-color → on le repeint via box-shadow interne + on force la couleur du texte. */
+.underlay-nav__inner :is(input, textarea, select):-webkit-autofill,
+.underlay-nav__inner :is(input, textarea, select):-webkit-autofill:hover,
+.underlay-nav__inner :is(input, textarea, select):-webkit-autofill:focus,
+.underlay-nav__inner :is(input, textarea, select):autofill {
+  -webkit-text-fill-color: var(--_primitives---colors--white);
+  -webkit-box-shadow: 0 0 0 100vmax var(--_primitives---colors--neutral-darkest) inset;
+          box-shadow: 0 0 0 100vmax var(--_primitives---colors--neutral-darkest) inset;
+  caret-color: var(--_primitives---colors--white);
+  transition: background-color 100000s ease-in-out 0s;
+}
 /* Select non renseigné = texte atténué (comme un placeholder) */
 .underlay-nav__inner select:has(option[value=""]:checked),
 [data-form-validate] select:has(option[value=""]:checked) {
