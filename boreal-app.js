@@ -82,7 +82,8 @@ function runPageModulesOnce(container) {
 
   const modules = [
     initButtonCharacterStagger,
-    initParallax,
+    initGlobalParallax,        // parallax flexible Osmo ([data-parallax="trigger"])
+    initContentRevealScroll,   // reveal on scroll Osmo ([data-reveal-group])
     initSplitHeadings,
     initFlipOnScroll,        // hero home
     initBackgroundZoom,      // hero page service
@@ -366,17 +367,134 @@ function initCursorMarqueeEffect() {
   setTimeout(() => { cursor.setAttribute("data-cursor-marquee-status", "not-active"); }, 500);
 }
 
-// ---- PARALLAX générique ----
-function initParallax() {
-  if (reducedMotion) return;
-  gsap.utils.toArray("[data-parallax]").forEach((el) => {
-    const speed = parseFloat(el.dataset.parallax) || 0.3;
-    gsap.fromTo(el,
-      { yPercent: speed * 50 },
-      { yPercent: -speed * 50, ease: "none",
-        scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: true } }
-    );
+// ---- PARALLAX flexible (Osmo global parallax) ----
+// [data-parallax="trigger"] (+ optionnel target/direction/scrub/start/end/scroll-start/scroll-end/disable)
+let _parallaxMM;
+function initGlobalParallax() {
+  if (_parallaxMM) _parallaxMM.revert(); // nettoie l'init précédente (Barba)
+  _parallaxMM = gsap.matchMedia();
+  _parallaxMM.add(
+    {
+      isMobile: "(max-width:479px)",
+      isMobileLandscape: "(max-width:767px)",
+      isTablet: "(max-width:991px)",
+      isDesktop: "(min-width:992px)"
+    },
+    (context) => {
+      const { isMobile, isMobileLandscape, isTablet } = context.conditions;
+      const ctx = gsap.context(() => {
+        document.querySelectorAll('[data-parallax="trigger"]').forEach((trigger) => {
+          const disable = trigger.getAttribute("data-parallax-disable");
+          if (
+            (disable === "mobile" && isMobile) ||
+            (disable === "mobileLandscape" && isMobileLandscape) ||
+            (disable === "tablet" && isTablet)
+          ) return;
+
+          const target = trigger.querySelector('[data-parallax="target"]') || trigger;
+          const direction = trigger.getAttribute("data-parallax-direction") || "vertical";
+          const prop = direction === "horizontal" ? "xPercent" : "yPercent";
+          const scrubAttr = trigger.getAttribute("data-parallax-scrub");
+          const scrub = scrubAttr ? parseFloat(scrubAttr) : true;
+          const startAttr = trigger.getAttribute("data-parallax-start");
+          const startVal = startAttr !== null ? parseFloat(startAttr) : 20;
+          const endAttr = trigger.getAttribute("data-parallax-end");
+          const endVal = endAttr !== null ? parseFloat(endAttr) : -20;
+          const scrollStart = `clamp(${trigger.getAttribute("data-parallax-scroll-start") || "top bottom"})`;
+          const scrollEnd = `clamp(${trigger.getAttribute("data-parallax-scroll-end") || "bottom top"})`;
+
+          gsap.fromTo(target, { [prop]: startVal }, {
+            [prop]: endVal, ease: "none",
+            scrollTrigger: { trigger, start: scrollStart, end: scrollEnd, scrub }
+          });
+        });
+      });
+      return () => ctx.revert();
+    }
+  );
+}
+
+// ---- REVEAL ON SCROLL (Osmo elements reveal) ----
+// [data-reveal-group] (+ nested [data-reveal-group-nested], data-stagger/distance/start/ignore)
+let _revealCtx;
+function initContentRevealScroll() {
+  if (_revealCtx) _revealCtx.revert(); // nettoie l'init précédente (Barba)
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  _revealCtx = gsap.context(() => {
+    document.querySelectorAll('[data-reveal-group]').forEach(groupEl => {
+      const groupStaggerSec = (parseFloat(groupEl.getAttribute('data-stagger')) || 100) / 1000;
+      const groupDistance = groupEl.getAttribute('data-distance') || '2em';
+      const triggerStart = groupEl.getAttribute('data-start') || 'top 80%';
+      const animDuration = 0.8;
+      const animEase = "power4.inOut";
+
+      if (prefersReduced) {
+        gsap.set(groupEl, { clearProps: 'all', y: 0, autoAlpha: 1 });
+        return;
+      }
+
+      const directChildren = Array.from(groupEl.children).filter(el => el.nodeType === 1);
+      if (!directChildren.length) {
+        gsap.set(groupEl, { y: groupDistance, autoAlpha: 0 });
+        ScrollTrigger.create({
+          trigger: groupEl, start: triggerStart, once: true,
+          onEnter: () => gsap.to(groupEl, { y: 0, autoAlpha: 1, duration: animDuration, ease: animEase, onComplete: () => gsap.set(groupEl, { clearProps: 'all' }) })
+        });
+        return;
+      }
+
+      const slots = [];
+      directChildren.forEach(child => {
+        const nestedGroup = child.matches('[data-reveal-group-nested]') ? child : child.querySelector(':scope [data-reveal-group-nested]');
+        if (nestedGroup) {
+          const includeParent = child.getAttribute('data-ignore') !== 'true' &&
+            (child.getAttribute('data-ignore') === 'false' || nestedGroup.getAttribute('data-ignore') === 'false');
+          const nestedChildren = Array.from(nestedGroup.children).filter(el => el.nodeType === 1 && el.getAttribute('data-ignore') !== 'true');
+          slots.push({ type: 'nested', parentEl: child, nestedEl: nestedGroup, includeParent, nestedChildren });
+        } else {
+          if (child.getAttribute('data-ignore') === 'true') return;
+          slots.push({ type: 'item', el: child });
+        }
+      });
+
+      slots.forEach(slot => {
+        if (slot.type === 'item') {
+          const isNestedSelf = slot.el.matches('[data-reveal-group-nested]');
+          const d = isNestedSelf ? groupDistance : (slot.el.getAttribute('data-distance') || groupDistance);
+          gsap.set(slot.el, { y: d, autoAlpha: 0 });
+        } else {
+          if (slot.includeParent) gsap.set(slot.parentEl, { y: groupDistance, autoAlpha: 0 });
+          const nestedD = slot.nestedEl.getAttribute('data-distance') || groupDistance;
+          slot.nestedChildren.forEach(target => gsap.set(target, { y: nestedD, autoAlpha: 0 }));
+        }
+      });
+      slots.forEach(slot => { if (slot.type === 'nested' && slot.includeParent) gsap.set(slot.parentEl, { y: groupDistance }); });
+
+      ScrollTrigger.create({
+        trigger: groupEl, start: triggerStart, once: true,
+        onEnter: () => {
+          const tl = gsap.timeline();
+          slots.forEach((slot, slotIndex) => {
+            const slotTime = slotIndex * groupStaggerSec;
+            if (slot.type === 'item') {
+              tl.to(slot.el, { y: 0, autoAlpha: 1, duration: animDuration, ease: animEase, onComplete: () => gsap.set(slot.el, { clearProps: 'all' }) }, slotTime);
+            } else {
+              if (slot.includeParent) {
+                tl.to(slot.parentEl, { y: 0, autoAlpha: 1, duration: animDuration, ease: animEase, onComplete: () => gsap.set(slot.parentEl, { clearProps: 'all' }) }, slotTime);
+              }
+              const nestedMs = parseFloat(slot.nestedEl.getAttribute('data-stagger'));
+              const nestedStaggerSec = isNaN(nestedMs) ? groupStaggerSec : nestedMs / 1000;
+              slot.nestedChildren.forEach((nestedChild, nestedIndex) => {
+                tl.to(nestedChild, { y: 0, autoAlpha: 1, duration: animDuration, ease: animEase, onComplete: () => gsap.set(nestedChild, { clearProps: 'all' }) }, slotTime + nestedIndex * nestedStaggerSec);
+              });
+            }
+          });
+        }
+      });
+    });
   });
+  return _revealCtx;
 }
 
 // ---- TITRES : split lignes ----
