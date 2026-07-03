@@ -146,7 +146,7 @@
 
 /* Le contenu de page recouvre le panneau (fixed, z-index:1) tant qu'il n'a pas
    coulissé. Fond opaque obligatoire, sinon le panneau se voit par transparence. */
-[data-main] { position: relative; z-index: 2; background-color: #06080a; }
+[data-main] { position: relative; z-index: 2; background-color: #030405; }
 @media screen and (max-width: 767px) { :root { --menu-width: 80vw; } }
 
 /* Aperçu dans le Designer : mettre data-menu-status="open" sur le body.
