@@ -247,3 +247,60 @@
   transition: background-position .45s cubic-bezier(.625,.05,0,1);
 }
 .demo-footer__a:hover { background-position: 0 0; }
+
+
+/* ===== FORMULAIRE underlay — scroll + thème sombre + validation (Osmo) ===== */
+
+/* Scroll vertical du panneau : le formulaire dépasse la hauteur d'écran.
+   `overflow` seul ne suffit pas → il faut une hauteur bornée (max-height).
+   `data-lenis-prevent` (posé en JS) laisse le scroll natif agir malgré Lenis. */
+.underlay-nav__inner {
+  max-height: 100svh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Champs : sortir du blanc Webflow par défaut → thème sombre du site */
+.underlay-nav__inner :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="submit"]) {
+  background-color: rgb(from var(--_primitives---colors--white) r g b / 0.04);
+  border: var(--_ui-styles---stroke--border-width, 1px) solid rgb(from var(--_primitives---colors--white) r g b / 0.16);
+  color: var(--_primitives---colors--white);
+  border-radius: 0.375em;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.underlay-nav__inner :is(input, textarea, select):focus {
+  border-color: rgb(from var(--_primitives---colors--sunshade) r g b / 0.85);
+  background-color: rgb(from var(--_primitives---colors--white) r g b / 0.06);
+  outline: none;
+}
+.underlay-nav__inner :is(input, textarea)::placeholder {
+  color: rgb(from var(--_primitives---colors--white) r g b / 0.4);
+}
+/* Select non renseigné = texte atténué (comme un placeholder) */
+.underlay-nav__inner select:has(option[value=""]:checked),
+[data-form-validate] select:has(option[value=""]:checked) {
+  color: rgb(from var(--_primitives---colors--white) r g b / 0.4);
+}
+
+/* --- États de validation Osmo (couleurs hardcodées → tokens Boréal) --- */
+/* Erreur = Carnation (variable d'erreur déjà utilisée sur .form-notification.is--error) */
+[data-validate].is--error :is(input, textarea, select) {
+  border-color: var(--_primitives---colors--carnation);
+}
+[data-validate].is--error .form-field-icon.is--error,
+[data-validate].is--error .radiocheck-field-icon.is--error { opacity: 1; }
+[data-validate].is--success .form-field-icon.is--success,
+[data-validate].is--success .radiocheck-field-icon.is--success { opacity: 1; }
+
+/* Radio / checkbox custom (si présents) — adaptés au thème sombre */
+[data-form-validate] .radiocheck-field input:focus-visible ~ .radiocheck-custom {
+  background-color: rgb(from var(--_primitives---colors--white) r g b / 0.12);
+}
+[data-form-validate] .radiocheck-field input:focus-visible:checked ~ .radiocheck-custom,
+[data-form-validate] .radiocheck-field input:checked ~ .radiocheck-custom {
+  background-color: var(--_primitives---colors--sunshade);
+  color: var(--_primitives---colors--neutral-darkest);
+}
+[data-form-validate] .radiocheck-field .radiocheck-label.is--small { margin-top: 0.125em; }
+[data-validate].is--error .radiocheck-custom { border-color: var(--_primitives---colors--carnation); }
+[data-validate].is--error input:checked ~ .radiocheck-custom { border-color: var(--_primitives---colors--white); }
