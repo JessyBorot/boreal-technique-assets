@@ -317,3 +317,19 @@
 [data-form-validate] .radiocheck-field .radiocheck-label.is--small { margin-top: 0.125em; }
 [data-validate].is--error .radiocheck-custom { border-color: var(--_primitives---colors--carnation); }
 [data-validate].is--error input:checked ~ .radiocheck-custom { border-color: var(--_primitives---colors--white); }
+
+
+/* ===== MINI SHOWREEL PLAYER (Osmo) — page Réalisation (T07) ===== */
+[data-mini-showreel-status="active"] .mini-showreel__click { display: none; }
+[data-mini-showreel-status] .mini-showreel__info { transition: margin 1s cubic-bezier(0.87, 0, 0.13, 1); }
+[data-mini-showreel-status="active"] .mini-showreel__info { margin-top: -2.75em; }
+[data-mini-showreel-status] .mini-showreel__card { transition: margin 1s cubic-bezier(0.87, 0, 0.13, 1); }
+[data-mini-showreel-status="active"] .mini-showreel__card { margin-top: 1.375em; margin-bottom: 1.375em; }
+[data-mini-showreel-status] .mini-showreel-lightbox__dark { transition: all 1s cubic-bezier(0.87, 0, 0.13, 1); }
+[data-mini-showreel-status="active"] .mini-showreel-lightbox__dark { opacity: 1; visibility: visible; }
+
+/* Optionnel — uniquement si tu ajoutes le lecteur Bunny HLS avancé dans la carte */
+[data-mini-showreel-status="not-active"] [data-bunny-player-init][data-player-status] .bunny-player__placeholder { opacity: 1; visibility: visible; }
+[data-mini-showreel-status="not-active"] [data-bunny-player-init][data-player-status] .bunny-player__dark { opacity: 0; }
+[data-mini-showreel-status="not-active"] [data-bunny-player-init] .bunny-player__playpause { opacity: 0; }
+[data-mini-showreel-status="not-active"] [data-bunny-player-init] .bunny-player__interface { opacity: 0; transform: translateY(1em) rotate(0.001deg); }

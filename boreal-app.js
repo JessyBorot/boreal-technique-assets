@@ -72,6 +72,7 @@ function initOnce() {
   initCursorMarqueeEffect();
   initFixedUnderlayNavigation(); // panneau formulaire soumission (persistant)
   initAdvancedFormValidation();  // validation live du formulaire (Osmo) — persistant
+  initMiniShowreelPlayer();      // lecteur showreel (Osmo, Flip) — persistant, délégation (T07)
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModals(); }); // 1× (persistant)
 }
 
@@ -1512,6 +1513,108 @@ function initAdvancedFormValidation() {
       }
     });
   });
+}
+
+// ---- MINI SHOWREEL PLAYER (Osmo, + lecture vidéo) — page Réalisation (T07) ----
+// Association par NOM : [data-mini-showreel-open="X"] ouvre [data-mini-showreel-lightbox="X"]
+// et anime (Flip) [data-mini-showreel-player="X"] dans [data-mini-showreel-target].
+// La vidéo jouée = le <video> (ou lecteur Bunny) À L'INTÉRIEUR de [data-mini-showreel-player="X"].
+// Persistant + délégation attachée 1× → Barba-safe (les noms sont re-résolus à chaque ouverture).
+// Flip déjà registré dans le head.
+let _showreelInited = false;
+function initMiniShowreelPlayer() {
+  if (_showreelInited) return;
+  _showreelInited = true;
+
+  const duration = 1;
+  const ease = "expo.inOut";
+  const zIndex = 999;
+
+  let n = "", isOpen = false;
+  let lb, pw, tg;
+  let pwCss = "", lbZ = "", pwZ = "";
+
+  const q = (sel, root = document) => root.querySelector(sel);
+  const getLB = (name) => q(`[data-mini-showreel-lightbox="${name}"]`);
+  const getPW = (name) => q(`[data-mini-showreel-player="${name}"]`);
+  const safe = (t) => t.closest("[data-mini-showreel-safearea]") || q("[data-mini-showreel-safearea]", t) || t;
+
+  const fit = (b, a) => {
+    let w = b.width, h = w / a;
+    if (h > b.height) { h = b.height; w = h * a; }
+    return { left: b.left + (b.width - w) / 2, top: b.top + (b.height - h) / 2, width: w, height: h };
+  };
+  const rectFor = (t) => {
+    const b = safe(t).getBoundingClientRect();
+    const r = t.getBoundingClientRect();
+    const a = r.width > 0 && r.height > 0 ? r.width / r.height : 16 / 9;
+    return fit(b, a);
+  };
+  const place = (el, r) => gsap.set(el, { position: "fixed", left: r.left, top: r.top, width: r.width, height: r.height, margin: 0, x: 0, y: 0 });
+
+  function setStatus(status) {
+    if (!n) return;
+    document.querySelectorAll(`[data-mini-showreel-lightbox="${n}"], [data-mini-showreel-player="${n}"]`).forEach((el) => el.setAttribute("data-mini-showreel-status", status));
+  }
+  function zOn() { lbZ = lb?.style.zIndex || ""; pwZ = pw?.style.zIndex || ""; if (lb) lb.style.zIndex = String(zIndex); if (pw) pw.style.zIndex = String(zIndex); }
+  function zOff() { if (lb) lb.style.zIndex = lbZ; if (pw) pw.style.zIndex = pwZ; }
+
+  // Lecture / arrêt : lecteur Bunny si présent, sinon <video> natif.
+  function playFor(name) {
+    const wrap = getPW(name); if (!wrap) return;
+    const bunny = wrap.querySelector("[data-bunny-player-init]");
+    const video = wrap.querySelector("video"); if (!video) return;
+    if (bunny) { const btn = bunny.querySelector('[data-player-control="play"], [data-player-control="playpause"]'); if (btn && (video.paused || video.ended)) btn.click(); return; }
+    try { video.play(); } catch (_) {}
+  }
+  function stopFor(name) {
+    const wrap = getPW(name); if (!wrap) return;
+    const bunny = wrap.querySelector("[data-bunny-player-init]");
+    const video = wrap.querySelector("video"); if (!video) return;
+    if (bunny) { const btn = bunny.querySelector('[data-player-control="pause"], [data-player-control="playpause"]'); if (btn && (!video.paused && !video.ended)) btn.click(); }
+    else { try { video.pause(); } catch (_) {} }
+    try { video.currentTime = 0; } catch (_) {}
+  }
+
+  function openBy(name) {
+    if (!name || isOpen) return;
+    lb = getLB(name); pw = getPW(name);
+    if (!lb || !pw) return;
+    tg = q("[data-mini-showreel-target]", lb);
+    if (!tg) return;
+    n = name; isOpen = true;
+    pw.dataset.flipId = n; pwCss = pw.style.cssText || "";
+    zOn(); setStatus("active"); playFor(n);
+    const state = Flip.getState(pw);
+    place(pw, rectFor(tg));
+    Flip.from(state, { duration, ease, absolute: true, scale: false });
+  }
+
+  function closeBy(nameOrEmpty) {
+    if (!isOpen || !pw) return;
+    if (nameOrEmpty && nameOrEmpty !== n) return;
+    stopFor(n); setStatus("not-active");
+    const state = Flip.getState(pw);
+    pw.style.cssText = pwCss;
+    if (lb) lb.style.zIndex = String(zIndex);
+    if (pw) pw.style.zIndex = String(zIndex);
+    Flip.from(state, {
+      duration, ease, absolute: true, scale: false,
+      onComplete: () => { zOff(); n = ""; isOpen = false; lb = pw = tg = null; pwCss = ""; lbZ = ""; pwZ = ""; }
+    });
+  }
+
+  function onResize() { if (!isOpen || !pw || !tg) return; place(pw, rectFor(tg)); }
+
+  // Délégation : couvre les boutons de n'importe quelle page (T07), sans re-binding par nav.
+  document.addEventListener("click", (e) => {
+    const openBtn = e.target.closest("[data-mini-showreel-open]");
+    if (openBtn) { e.preventDefault(); openBy(openBtn.getAttribute("data-mini-showreel-open") || ""); return; }
+    const closeBtn = e.target.closest("[data-mini-showreel-close]");
+    if (closeBtn) { e.preventDefault(); closeBy(closeBtn.getAttribute("data-mini-showreel-close") || ""); }
+  });
+  window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeBy(""); });
+  window.addEventListener("resize", onResize);
 }
 
 // ---- ACCORDÉON CSS (Osmo) — FAQ ----
