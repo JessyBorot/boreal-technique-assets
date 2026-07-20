@@ -19,15 +19,15 @@ focus des champs, checkbox/radio cochée) utilisent le token Webflow
 Auparavant `--_primitives---colors--sunshade` (jaune/orange), retiré de la DA V2.
 Le token est défini dans Webflow (variables du site), pas dans ce fichier.
 
-### Section Services — rangée pleine largeur + chevauchement (V2 — Userback #8034497)
+### Section Services — rangée pleine largeur (V2 — Userback #8034497)
 `initStackingStickyCardsBounce` : les 4 cartes `[data-stacking-card]` d'une section
 `[data-stacking-cards-init]` **montent/descendent PILOTÉES PAR LE SCROLL** (`scrub:true`,
 staggerées), chacune à un **angle de repos différent** (`[-6,-2.5,2.5,6]°`), + **bounce**
 (`pulseElement`) quand chaque carte atteint sa position. Le layout **rangée côte-à-côte pleine
-largeur qui se chevauche** (4 → 2 → 1 col) est dans `boreal-styles.css` (`.cards-stack__list`
-en `flex-direction:row; gap:0`, `.cards-stack__item` en `flex:1 1 0` + `margin-left:-2.5vw`
-de chevauchement + `z-index` croissant, container full-bleed). ⚠️ Le custom code ne tourne pas
-dans le canvas Designer → juger le rendu sur l'**URL publiée**.
+largeur, sans chevauchement** (4 → 2 → 1 col) est dans `boreal-styles.css` (`.cards-stack__list`
+en `flex-direction:row` + gap normal, `.cards-stack__item` en `flex:1 1 0`, container
+full-bleed). ⚠️ Le custom code ne tourne pas dans le canvas Designer → juger le rendu sur
+l'**URL publiée**.
 
 ### Formulaire underlay (soumission)
 - Panneau latéral persistant (`initFixedUnderlayNavigation`) ouvert par tout `[data-underlay-nav-toggle]`.
