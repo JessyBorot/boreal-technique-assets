@@ -12,6 +12,13 @@ Fichiers statiques (JS/CSS) servis en CDN via **jsDelivr** pour le site Webflow
   Barba/Lenis/transitions de page. Chargé dans le **footer** Webflow.
 - `boreal-styles.css` — styles de ces modules. Chargé dans le **head** Webflow.
 
+### Couleur d'accent (V2 — juil. 2026)
+Les usages d'accent (bordure stats, bullets/outline témoignages, remplissage lien footer,
+focus des champs, checkbox/radio cochée) utilisent le token Webflow
+`--_primitives---colors--dodger-blue` (bleu du papillon du logo, `#29b6ff`).
+Auparavant `--_primitives---colors--sunshade` (jaune/orange), retiré de la DA V2.
+Le token est défini dans Webflow (variables du site), pas dans ce fichier.
+
 ### Formulaire underlay (soumission)
 - Panneau latéral persistant (`initFixedUnderlayNavigation`) ouvert par tout `[data-underlay-nav-toggle]`.
 - `.underlay-nav__inner` : `data-lenis-prevent` (posé en JS) + `max-height:100svh; overflow-y:auto`

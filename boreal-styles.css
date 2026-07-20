@@ -107,7 +107,7 @@
 
 
 /* ===== STATS26 (cartes chiffres page service) — liseré tournant ===== */
-.stats26_item { --c: var(--_primitives---colors--sunshade); --speed: 4.5s; --thickness: 1.6px; position: relative; isolation: isolate; box-shadow: 0 0 0 1px rgb(from var(--c) r g b / .16); }
+.stats26_item { --c: var(--_primitives---colors--dodger-blue); --speed: 4.5s; --thickness: 1.6px; position: relative; isolation: isolate; box-shadow: 0 0 0 1px rgb(from var(--c) r g b / .16); }
 .stats26_item::before {
   content: ''; position: absolute; inset: 0; border-radius: inherit; padding: var(--thickness);
   background: conic-gradient(from var(--brd-angle), rgb(from var(--c) r g b / 0) 0deg, rgb(from var(--c) r g b / 0) 60deg, rgb(from var(--c) r g b / .85) 90deg, rgb(from var(--c) r g b / .15) 120deg, rgb(from var(--c) r g b / 0) 170deg, rgb(from var(--c) r g b / 0) 360deg);
@@ -176,7 +176,7 @@
   inset: 2px;
   border-radius: 100em;
   z-index: -1;
-  border: var(--_ui-styles---stroke--border-width) solid var(--_primitives---colors--sunshade);
+  border: var(--_ui-styles---stroke--border-width) solid var(--_primitives---colors--dodger-blue);
   transition: all 0.5s cubic-bezier(0.65, 0.05, 0, 1);
 }
 .centered-slider-bullet:hover::after,
@@ -186,7 +186,7 @@
 .centered-slider-row:has(.centered-slider-slide.active) .centered-slider-slide:not(.active) { opacity: 0.45; }
 
 .centered-slider-slide::after {
-  --size: 1em; --width: var(--_ui-styles---stroke--border-width); --gap: 0.5em; --color: var(--_primitives---colors--sunshade);
+  --size: 1em; --width: var(--_ui-styles---stroke--border-width); --gap: 0.5em; --color: var(--_primitives---colors--dodger-blue);
   content: '';
   position: absolute;
   inset: calc(var(--gap) * -1);
@@ -240,7 +240,7 @@
 
 /* ===== FOOTER — lien qui se remplit ===== */
 .demo-footer__a {
-  --fill: var(--_primitives---colors--sunshade); --base: var(--_primitives---colors--white);
+  --fill: var(--_primitives---colors--dodger-blue); --base: var(--_primitives---colors--white);
   background-image: linear-gradient(to right, var(--fill) 50%, var(--base) 50%);
   background-size: 200% 100%; background-position: 100% 0;
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
@@ -269,7 +269,7 @@
   transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 .underlay-nav__inner :is(input, textarea, select):focus {
-  border-color: rgb(from var(--_primitives---colors--sunshade) r g b / 0.85);
+  border-color: rgb(from var(--_primitives---colors--dodger-blue) r g b / 0.85);
   background-color: rgb(from var(--_primitives---colors--white) r g b / 0.06);
   outline: none;
 }
@@ -311,7 +311,7 @@
 }
 [data-form-validate] .radiocheck-field input:focus-visible:checked ~ .radiocheck-custom,
 [data-form-validate] .radiocheck-field input:checked ~ .radiocheck-custom {
-  background-color: var(--_primitives---colors--sunshade);
+  background-color: var(--_primitives---colors--dodger-blue);
   color: var(--_primitives---colors--neutral-darkest);
 }
 [data-form-validate] .radiocheck-field .radiocheck-label.is--small { margin-top: 0.125em; }
