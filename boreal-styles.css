@@ -335,17 +335,24 @@
 [data-mini-showreel-status="not-active"] [data-bunny-player-init] .bunny-player__interface { opacity: 0; transform: translateY(1em) rotate(0.001deg); }
 
 
-/* ===== SERVICES — layout RANGÉE pleine largeur (V2, Userback #8034497) =====
-   4 cartes côte-à-côte quasi bord-à-bord (desktop), 2 (tablette), 1 (mobile).
-   Remplace l'empilement vertical centré. L'anim (cascade + bounce) est dans boreal-app.js.
+/* ===== SERVICES — layout RANGÉE pleine largeur + CHEVAUCHEMENT (V2, Userback #8034497) =====
+   4 cartes côte-à-côte quasi bord-à-bord qui SE CHEVAUCHENT (desktop), 2 (tablette), 1 (mobile).
+   Angle par carte + montée/descente au scroll = boreal-app.js.
    NB : le custom code ne s'exécute PAS dans le canvas Designer → juger sur l'URL publiée. */
-.cards-stack .container { max-width: none; padding-left: clamp(0.6rem, 1.5vw, 1.5rem); padding-right: clamp(0.6rem, 1.5vw, 1.5rem); }
-.cards-stack__list { flex-direction: row !important; flex-wrap: nowrap; align-items: stretch; justify-content: center; gap: clamp(0.75rem, 1.1vw, 1.25rem) !important; }
+.cards-stack .container { max-width: none; padding-left: clamp(0.4rem, 1vw, 1rem); padding-right: clamp(0.4rem, 1vw, 1rem); }
+.cards-stack__list { flex-direction: row !important; flex-wrap: nowrap; align-items: flex-start; justify-content: center; gap: 0 !important; }
 .cards-stack__item { flex: 1 1 0 !important; width: auto !important; min-width: 0; display: flex; }
-.cards-stack__item .cards-stack-card { width: 100%; height: 100%; }
+.cards-stack__item + .cards-stack__item { margin-left: -2.5vw; } /* chevauchement */
+.cards-stack__item:nth-child(1) { z-index: 1; }
+.cards-stack__item:nth-child(2) { z-index: 2; }
+.cards-stack__item:nth-child(3) { z-index: 3; }
+.cards-stack__item:nth-child(4) { z-index: 4; }
+.cards-stack__item:hover { z-index: 10; }
+.cards-stack__item .cards-stack-card { width: 100%; height: 100%; transform-origin: 50% 100%; }
 @media screen and (max-width: 991px) {
-  .cards-stack__list { flex-wrap: wrap !important; }
+  .cards-stack__list { flex-wrap: wrap !important; gap: 1rem !important; }
   .cards-stack__item { flex: 1 1 46% !important; }
+  .cards-stack__item + .cards-stack__item { margin-left: 0; }
 }
 @media screen and (max-width: 767px) {
   .cards-stack__item { flex: 1 1 100% !important; }

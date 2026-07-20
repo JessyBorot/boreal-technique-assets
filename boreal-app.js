@@ -831,11 +831,12 @@ function initBackgroundZoom() {
   window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(bgZoomTimeline, 100); });
 }
 
-// ---- SERVICES — cartes en rangée : arrivée en cascade + bounce ----
-// (ex-empilement vertical sticky ; le layout rangée pleine largeur est dans boreal-styles.css)
+// ---- SERVICES — cartes en rangée : montée/descente PILOTÉE PAR LE SCROLL + bounce ----
+// (le layout rangée + chevauchement est dans boreal-styles.css)
 function initStackingStickyCardsBounce() {
   const sections = document.querySelectorAll("[data-stacking-cards-init]");
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const angles = [-6, -2.5, 2.5, 6]; // angle de repos, un peu différent par carte
 
   sections.forEach((section) => {
     // Barba / ré-entrée : nettoyer les triggers + tweens de CETTE section
@@ -844,23 +845,19 @@ function initStackingStickyCardsBounce() {
     targets.forEach((el) => { gsap.killTweensOf(el); gsap.set(el, { clearProps: "all" }); });
     if (!targets.length) return;
 
-    if (reduce) { gsap.set(targets, { autoAlpha: 1, y: 0, rotate: 0 }); return; }
+    // angle statique (les cartes restent inclinées ; le chevauchement est en CSS)
+    gsap.set(targets, { rotate: (i) => angles[i % angles.length], transformOrigin: "50% 100%" });
 
-    // état initial caché (léger décalage vertical + rotation alternée)
-    gsap.set(targets, { autoAlpha: 0, y: 56, rotate: (i) => (i % 2 ? -3 : 3) });
+    if (reduce) { gsap.set(targets, { y: 0, autoAlpha: 1 }); return; }
 
-    let played = false;
-    const reveal = () => {
-      if (played) return; played = true;
-      // les cartes arrivent les unes après les autres…
-      gsap.to(targets, { autoAlpha: 1, y: 0, rotate: 0, duration: 0.7, ease: "power3.out", stagger: 0.1 });
-      // …puis le bounce (pulseElement) quand chacune se pose
-      targets.forEach((el, idx) => gsap.delayedCall(0.7 + idx * 0.1, () => pulseElement(el)));
-    };
+    // MONTÉE / DESCENTE pilotée par le scroll (scrub) + stagger : scroller haut/bas déplace les cartes
+    gsap.timeline({ scrollTrigger: { trigger: section, start: "top 90%", end: "top 30%", scrub: true } })
+      .fromTo(targets, { y: 150, autoAlpha: 0.1 }, { y: 0, autoAlpha: 1, ease: "none", stagger: 0.2 }, 0);
 
-    ScrollTrigger.create({ trigger: section, start: "top 80%", once: true, onEnter: reveal });
-    // sécurité : section déjà à l'écran / au-dessus au moment de l'init → révéler tout de suite
-    if (section.getBoundingClientRect().top < window.innerHeight * 0.8) reveal();
+    // bounce (pulseElement) une fois, quand chaque carte atteint sa position
+    targets.forEach((el, i) => {
+      ScrollTrigger.create({ trigger: section, start: `top ${45 - i * 7}%`, onEnter: () => pulseElement(el) });
+    });
   });
 
   ScrollTrigger.refresh();
