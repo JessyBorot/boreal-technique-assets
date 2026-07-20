@@ -831,98 +831,49 @@ function initBackgroundZoom() {
   window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(bgZoomTimeline, 100); });
 }
 
-// ---- STACKING STICKY CARDS (bounce) ----
+// ---- SERVICES — cartes en rangée : arrivée en cascade + bounce ----
+// (ex-empilement vertical sticky ; le layout rangée pleine largeur est dans boreal-styles.css)
 function initStackingStickyCardsBounce() {
-  const cardsSections = document.querySelectorAll("[data-stacking-cards-init]");
-  const currentTier = getCurrentViewportTier();
-  window.viewportTier = currentTier;
+  const sections = document.querySelectorAll("[data-stacking-cards-init]");
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  ScrollTrigger.getAll().forEach((trigger) => {
-    cardsSections.forEach((section) => { if (section.contains(trigger.trigger)) trigger.kill(); });
-  });
-  cardsSections.forEach((section) => {
-    section.querySelectorAll("[data-stacking-card-target]").forEach((el) => { gsap.killTweensOf(el); gsap.set(el, { clearProps: "all" }); });
-  });
+  sections.forEach((section) => {
+    // Barba / ré-entrée : nettoyer les triggers + tweens de CETTE section
+    ScrollTrigger.getAll().forEach((t) => { if (t.trigger && section.contains(t.trigger)) t.kill(); });
+    const targets = Array.from(section.querySelectorAll("[data-stacking-card-target]"));
+    targets.forEach((el) => { gsap.killTweensOf(el); gsap.set(el, { clearProps: "all" }); });
+    if (!targets.length) return;
 
-  cardsSections.forEach((section) => {
-    const tier = currentTier;
-    const isEnabled = (tier === "desktop" && section.dataset.stackingCardsDesktop === "true") ||
-      (tier === "tablet" && section.dataset.stackingCardsTablet === "true") ||
-      ((tier === "mobile-portrait" || tier === "mobile-landscape") && section.dataset.stackingCardsMobile === "true");
-    if (!isEnabled) return;
+    if (reduce) { gsap.set(targets, { autoAlpha: 1, y: 0, rotate: 0 }); return; }
 
-    const cards = Array.from(section.querySelectorAll("[data-stacking-card]"));
-    if (!cards.length) return;
-    const stickyTop = parseFloat(getComputedStyle(cards[0]).top) || 0;
+    // état initial caché (léger décalage vertical + rotation alternée)
+    gsap.set(targets, { autoAlpha: 0, y: 56, rotate: (i) => (i % 2 ? -3 : 3) });
 
-    const rotateValues = tier === "desktop" ? parseRotateValues(section, "data-stacking-cards-desktop-rotate")
-      : tier === "tablet" ? parseRotateValues(section, "data-stacking-cards-tablet-rotate")
-      : parseRotateValues(section, "data-stacking-cards-mobile-rotate");
-    const xValues = tier === "desktop" ? parseAxisValues(section, "data-stacking-cards-desktop-x")
-      : tier === "tablet" ? parseAxisValues(section, "data-stacking-cards-tablet-x")
-      : parseAxisValues(section, "data-stacking-cards-mobile-x");
-    const yValues = tier === "desktop" ? parseAxisValues(section, "data-stacking-cards-desktop-y")
-      : tier === "tablet" ? parseAxisValues(section, "data-stacking-cards-tablet-y")
-      : parseAxisValues(section, "data-stacking-cards-mobile-y");
+    let played = false;
+    const reveal = () => {
+      if (played) return; played = true;
+      // les cartes arrivent les unes après les autres…
+      gsap.to(targets, { autoAlpha: 1, y: 0, rotate: 0, duration: 0.7, ease: "power3.out", stagger: 0.1 });
+      // …puis le bounce (pulseElement) quand chacune se pose
+      targets.forEach((el, idx) => gsap.delayedCall(0.7 + idx * 0.1, () => pulseElement(el)));
+    };
 
-    cards.forEach((card, index) => {
-      const targetEl = card.querySelector("[data-stacking-card-target]");
-      if (!targetEl) return;
-      const rotate = rotateValues[index % rotateValues.length];
-      const x = xValues[index % xValues.length];
-      const y = yValues[index % yValues.length];
-      gsap.set(targetEl, { rotate: 0, x: 0, y: 0, scale: 1, zIndex: cards.length - index });
-      gsap.to(targetEl, {
-        rotate, x, y, ease: "power1.in", overwrite: "auto",
-        scrollTrigger: { id: `stacking-rotate-${index}`, trigger: card, start: "top 75%", end: `top-=${stickyTop} top`, scrub: true }
-      });
-      ScrollTrigger.create({ id: `stacking-bounce-${index}`, trigger: card, start: `top-=${stickyTop} top`, onEnter: () => pulseElement(targetEl) });
-    });
+    ScrollTrigger.create({ trigger: section, start: "top 80%", once: true, onEnter: reveal });
+    // sécurité : section déjà à l'écran / au-dessus au moment de l'init → révéler tout de suite
+    if (section.getBoundingClientRect().top < window.innerHeight * 0.8) reveal();
   });
 
   ScrollTrigger.refresh();
 
-  function parseRotateValues(section, attr) {
-    const fallback = [0, 4, -4];
-    const values = (section.getAttribute(attr) || "").split(",").map((v) => parseFloat(v.trim()));
-    return values.length >= 1 && values.every((v) => !isNaN(v)) ? values : fallback;
-  }
-  function parseAxisValues(section, attr) {
-    const raw = section.getAttribute(attr);
-    if (!raw) return ["0em", "0em", "0em"];
-    const values = raw.split(",").map((v) => v.trim()).filter((v) => v !== "");
-    return values.length ? values : ["0em", "0em", "0em"];
-  }
-  if (!window._hasStackingResizeListener) {
-    let last = getCurrentViewportTier();
-    window.addEventListener("resize", debounceOnWidthChange(() => {
-      const next = getCurrentViewportTier();
-      if (last !== next) {
-        ScrollTrigger.getAll().forEach((t) => { if (t.vars?.id?.startsWith("stacking")) t.kill(); });
-        cardsSections.forEach((section) => {
-          section.querySelectorAll("[data-stacking-card-target]").forEach((el) => { gsap.killTweensOf(el); gsap.set(el, { clearProps: "all" }); });
-        });
-        initStackingStickyCardsBounce();
-      }
-      last = next; window.viewportTier = next;
-    }, 250));
-    window._hasStackingResizeListener = true;
-  }
-  function getCurrentViewportTier() {
-    const width = window.innerWidth;
-    if (width <= 479) return "mobile-portrait";
-    if (width <= 767) return "mobile-landscape";
-    if (width <= 991) return "tablet";
-    return "desktop";
-  }
+  // Bounce Osmo : stretch rapide + retour élastique
   function pulseElement(targetEl) {
     const width = targetEl.offsetWidth, height = targetEl.offsetHeight;
     const fontSize = parseFloat(getComputedStyle(targetEl).fontSize);
     const stretchPx = 1.5 * fontSize;
     const targetScaleX = (width + stretchPx) / width;
     const targetScaleY = (height - stretchPx * 0.33) / height;
-    const tl = gsap.timeline();
-    tl.to(targetEl, { scaleX: targetScaleX, scaleY: targetScaleY, duration: 0.1, ease: "power1.out" })
+    gsap.timeline()
+      .to(targetEl, { scaleX: targetScaleX, scaleY: targetScaleY, duration: 0.1, ease: "power1.out" })
       .to(targetEl, { scaleX: 1, scaleY: 1, duration: 1, ease: "elastic.out(1, 0.3)" });
   }
 }

@@ -19,6 +19,15 @@ focus des champs, checkbox/radio cochée) utilisent le token Webflow
 Auparavant `--_primitives---colors--sunshade` (jaune/orange), retiré de la DA V2.
 Le token est défini dans Webflow (variables du site), pas dans ce fichier.
 
+### Section Services — rangée pleine largeur (V2 — Userback #8034497)
+`initStackingStickyCardsBounce` ne fait plus d'empilement vertical sticky : les 4 cartes
+`[data-stacking-card]` d'une section `[data-stacking-cards-init]` **arrivent en cascade
+(stagger) + bounce** (`pulseElement`) quand la section entre à l'écran. Le layout **rangée
+côte-à-côte pleine largeur** (4 → 2 → 1 col) est piloté par `boreal-styles.css`
+(`.cards-stack__list` en `flex-direction:row`, `.cards-stack__item` en `flex:1 1 0`, gap
+réduit, container full-bleed). ⚠️ Le custom code ne tourne pas dans le canvas Designer →
+juger le rendu sur l'**URL publiée**.
+
 ### Formulaire underlay (soumission)
 - Panneau latéral persistant (`initFixedUnderlayNavigation`) ouvert par tout `[data-underlay-nav-toggle]`.
 - `.underlay-nav__inner` : `data-lenis-prevent` (posé en JS) + `max-height:100svh; overflow-y:auto`

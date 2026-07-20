@@ -333,3 +333,20 @@
 [data-mini-showreel-status="not-active"] [data-bunny-player-init][data-player-status] .bunny-player__dark { opacity: 0; }
 [data-mini-showreel-status="not-active"] [data-bunny-player-init] .bunny-player__playpause { opacity: 0; }
 [data-mini-showreel-status="not-active"] [data-bunny-player-init] .bunny-player__interface { opacity: 0; transform: translateY(1em) rotate(0.001deg); }
+
+
+/* ===== SERVICES — layout RANGÉE pleine largeur (V2, Userback #8034497) =====
+   4 cartes côte-à-côte quasi bord-à-bord (desktop), 2 (tablette), 1 (mobile).
+   Remplace l'empilement vertical centré. L'anim (cascade + bounce) est dans boreal-app.js.
+   NB : le custom code ne s'exécute PAS dans le canvas Designer → juger sur l'URL publiée. */
+.cards-stack .container { max-width: none; padding-left: clamp(0.6rem, 1.5vw, 1.5rem); padding-right: clamp(0.6rem, 1.5vw, 1.5rem); }
+.cards-stack__list { flex-direction: row !important; flex-wrap: nowrap; align-items: stretch; justify-content: center; gap: clamp(0.75rem, 1.1vw, 1.25rem) !important; }
+.cards-stack__item { flex: 1 1 0 !important; width: auto !important; min-width: 0; display: flex; }
+.cards-stack__item .cards-stack-card { width: 100%; height: 100%; }
+@media screen and (max-width: 991px) {
+  .cards-stack__list { flex-wrap: wrap !important; }
+  .cards-stack__item { flex: 1 1 46% !important; }
+}
+@media screen and (max-width: 767px) {
+  .cards-stack__item { flex: 1 1 100% !important; }
+}
