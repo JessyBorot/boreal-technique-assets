@@ -30,13 +30,21 @@ full-bleed). ⚠️ Le custom code ne tourne pas dans le canvas Designer → jug
 l'**URL publiée**.
 
 ### Section Réalisations — panorama 3D (remplace le tornado, Userback #8034641)
-`initPanoramaCarousel` (remplace l'ancien `init3DCardsTornado`, retiré) : les cartes sont
-disposées sur un **anneau 3D cylindrique** (façon Netfolie). La rotation **suit la progression
-du scroll** pendant que la section traverse l'écran (ScrollTrigger `onUpdate`, **PAS
-d'épinglage** → on ne bloque pas, on passe librement à la section suivante). **Drag** en
-complément (offset + inertie) et **curseur « Glisser »** qui suit la souris. Angle de repos
-via un tilt `rotateZ(4deg) rotateX(7deg)`. Barba-safe (annule rAF + kill ScrollTriggers +
-retire le listener resize à chaque ré-init).
+`initPanoramaCarousel` (remplace l'ancien `init3DCardsTornado`, retiré) : cylindre 3D façon
+Netfolie **construit avec Swiper** (même techno que Netfolie) + un effet panorama custom
+(`on.setTranslate` → chaque carte placée sur le cylindre via son `progress`). Swiper gère
+drag + momentum. La rotation **suit la progression du scroll** de la page (section hauteur
+normale, `setProgress` → **PAS d'épinglage**, on passe librement à la suite). Tilt statique
+`rotateZ(3deg) rotateX(6deg)` sur un wrapper `[data-pano-tilt]` créé en JS (angle sans dérive
+latérale). Curseur « Glisser ». Params : `ANGLE=40` (écart entre cartes), `R=560` (rayon).
+Barba-safe (`swiper.destroy` + retrait des listeners à chaque ré-init).
+
+⚠️ **Requiert Swiper 11** chargé dans Webflow :
+- Head : `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">`
+- Footer, **avant** `boreal-app.js` : `<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>`
+
+Le module adapte la structure existante en JS (ajoute `swiper`/`swiper-wrapper`/`swiper-slide`
++ le wrapper de tilt) — **rien à changer dans le Designer** hormis charger Swiper.
 
 **Structure Webflow attendue :**
 ```

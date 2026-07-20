@@ -1129,81 +1129,93 @@ function initLogoWallCycle() {
   });
 }
 
-// ---- RÉALISATIONS — panorama 3D (carrousel cylindrique, piloté par le scroll) ----
-// Remplace l'ancien tornado. Anneau de cartes ; la rotation SUIT la progression du scroll
-// pendant que la section traverse l'écran (PAS d'épinglage → on ne bloque pas le scroll).
-// Drag en complément. Structure Webflow attendue :
-//   [data-pano] (section) > [data-pano-ring] (Collection List) > [data-pcard] (Collection Item = lien)
-//   + [data-pano-cursor] (bulle « Glisser ») dans la section.
+// ---- RÉALISATIONS — panorama 3D (Swiper, piloté par le scroll) ----
+// Cylindre facon Netfolie via Swiper (drag/momentum) + effet custom. Rotation pilotée par le
+// scroll de la page (section hauteur normale => NON bloquant). Requiert Swiper (chargé via Webflow).
+// Structure Webflow : [data-pano] > [data-pano-ring] (cartes [data-pcard] dedans) + [data-pano-cursor].
 function initPanoramaCarousel() {
-  if (window._panoRAF) { cancelAnimationFrame(window._panoRAF); window._panoRAF = null; }
-  if (window._panoResize) { window.removeEventListener("resize", window._panoResize); window._panoResize = null; }
+  // Cleanup (Barba / ré-entrée)
+  if (window._panoSwiper) { try { window._panoSwiper.destroy(true, true); } catch (e) {} window._panoSwiper = null; }
+  if (window._panoScroll) { window.removeEventListener("scroll", window._panoScroll); window._panoScroll = null; }
+  if (window._panoCursorRAF) { cancelAnimationFrame(window._panoCursorRAF); window._panoCursorRAF = null; }
+
   const stage = document.querySelector("[data-pano]");
   if (!stage) return;
-  ScrollTrigger.getAll().forEach((t) => { if (t.trigger && stage.contains(t.trigger)) t.kill(); });
   const ring = stage.querySelector("[data-pano-ring]");
-  const cursor = stage.querySelector("[data-pano-cursor]");
-  const cards = ring ? Array.from(ring.querySelectorAll("[data-pcard]")) : [];
-  if (!ring || !cards.length) return;
+  if (!ring) return;
+  if (typeof Swiper === "undefined") { console.warn("[panorama] Swiper non chargé — ajoute le <script> Swiper dans Webflow (footer, avant boreal-app.js)."); return; }
 
-  const N = cards.length, theta = 360 / N, TURN = 360;
-  const TILT = "rotateZ(4deg) rotateX(7deg)";
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let R = 900, scrollP = 0, dragOffset = 0, vel = 0, dragging = false, lastX = 0, moved = 0;
-
-  function layout() {
-    // Les liens .w-inline-block ont max-width:100% → 100% de l'anneau (0px large) = 0 → largeur écrasée.
-    // On neutralise (inline !important) pour que la carte reprenne la largeur de son contenu.
-    cards.forEach((c) => c.style.setProperty("max-width", "none", "important"));
-    const w = cards[0].offsetWidth || (cards[0].firstElementChild && cards[0].firstElementChild.offsetWidth) || 340, gap = 40;
-    R = Math.round((w + gap) / (2 * Math.sin(Math.PI / N)));
-    cards.forEach((c, i) => { c.style.transform = `translate(-50%, -50%) rotateY(${i * theta}deg) translateZ(${R}px)`; });
+  // Adapter la structure existante au format Swiper (sans rien changer dans le Designer)
+  ring.classList.add("swiper");
+  let wrapper = ring.querySelector(":scope > .swiper-wrapper");
+  if (!wrapper) {
+    wrapper = document.createElement("div");
+    wrapper.className = "swiper-wrapper";
+    Array.from(ring.querySelectorAll("[data-pcard]")).forEach((c) => { c.classList.add("swiper-slide"); wrapper.appendChild(c); });
+    ring.appendChild(wrapper);
   }
-  function render() {
-    const rot = scrollP * TURN + dragOffset;
-    ring.style.transform = `${TILT} translateZ(${-R}px) rotateY(${rot}deg)`;
-    cards.forEach((c, i) => {
-      const a = (((i * theta + rot) % 360) + 540) % 360 - 180;   // -180..180, 0 = face
-      const f = Math.cos((a * Math.PI) / 180);                   // 1 devant, -1 derrière
-      c.style.opacity = (0.12 + 0.88 * Math.max(0, f + 0.1)).toFixed(3);
-      c.style.filter = `brightness(${(0.4 + 0.6 * Math.max(0, f)).toFixed(3)})`;
-      c.style.pointerEvents = f > 0.7 ? "auto" : "none";
-      c.style.zIndex = String(Math.round(f * 100) + 100);
+  // Wrapper de TILT (angle statique => la rotation ne dérive pas latéralement)
+  let tilt = ring.parentElement;
+  if (!tilt || !tilt.hasAttribute("data-pano-tilt")) {
+    tilt = document.createElement("div");
+    tilt.setAttribute("data-pano-tilt", "");
+    ring.parentNode.insertBefore(tilt, ring);
+    tilt.appendChild(ring);
+  }
+
+  const ANGLE = 40, R = 560;
+  function panorama(sw) {
+    const centerX = sw.width / 2;
+    sw.slides.forEach((slide) => {
+      const size = slide.swiperSlideSize;
+      const off = slide.swiperSlideOffset;
+      const c = (-sw.translate + centerX - off - size / 2) / size;   // distance au centre (en cartes) — pilote la rotation
+      const angle = c * ANGLE;
+      const rad = (angle * Math.PI) / 180;
+      const x = Math.sin(rad) * R;
+      const z = (Math.cos(rad) - 1) * R;
+      const baseX = centerX - size / 2 - off;                        // centre la carte (FIXE => pas de dérive latérale)
+      slide.style.transform = `translateX(${baseX + x}px) translateZ(${z}px) rotateY(${angle}deg)`;
+      const f = Math.cos(rad);
+      slide.style.zIndex = String(Math.round(f * 100) + 100);
+      slide.style.opacity = (0.12 + 0.88 * Math.max(0, f + 0.1)).toFixed(3);
+      slide.style.filter = `brightness(${(0.45 + 0.55 * Math.max(0, f)).toFixed(3)})`;
     });
   }
-  layout(); render();
-  window._panoResize = () => { layout(); render(); };
-  window.addEventListener("resize", window._panoResize);
 
-  // Rotation pilotée par le scroll (section de hauteur normale → non-bloquant)
-  ScrollTrigger.create({
-    trigger: stage, start: "top bottom", end: "bottom top",
-    onUpdate: (self) => { scrollP = self.progress; if (reduce) render(); },
-    onRefresh: (self) => { scrollP = self.progress; if (reduce) render(); }
+  const swiper = new Swiper(ring, {
+    slidesPerView: "auto", centeredSlides: true, virtualTranslate: true, grabCursor: true,
+    watchSlidesProgress: true, resistanceRatio: 0.65, speed: 500,
+    freeMode: { enabled: true, momentum: true, momentumRatio: 0.6, sticky: false },
+    on: {
+      setTranslate(sw) { panorama(sw); },
+      setTransition(sw, d) { sw.slides.forEach((s) => { s.style.transitionDuration = d + "ms"; }); },
+      init(sw) { panorama(sw); }
+    }
   });
+  window._panoSwiper = swiper;
 
-  if (reduce) return; // pas de boucle d'inertie ni de drag continu en reduced-motion
+  // Rotation pilotée par le scroll de la page (0..1 pendant que la section traverse l'écran)
+  const onScroll = () => {
+    const r = stage.getBoundingClientRect(), vh = window.innerHeight;
+    const p = Math.min(1, Math.max(0, (vh - r.top) / (vh + r.height)));
+    swiper.setProgress(p, 0);
+  };
+  window._panoScroll = onScroll;
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
 
-  function loop() {
-    if (!dragging) { dragOffset += vel; vel *= 0.92; if (Math.abs(vel) < 0.01) vel = 0; }
-    render();
-    window._panoRAF = requestAnimationFrame(loop);
-  }
-  loop();
-
-  // Drag = complément (offset qui s'ajoute à la rotation du scroll) + curseur « Glisser »
-  stage.addEventListener("pointerdown", (e) => { dragging = true; lastX = e.clientX; moved = 0; vel = 0; if (cursor) cursor.classList.add("is-grab"); try { stage.setPointerCapture(e.pointerId); } catch (_) {} });
-  stage.addEventListener("pointermove", (e) => {
-    if (cursor) { const r = stage.getBoundingClientRect(); cursor.style.transform = `translate(${e.clientX - r.left}px, ${e.clientY - r.top}px) translate(-50%, -50%)`; }
-    if (dragging) { const dx = e.clientX - lastX; lastX = e.clientX; moved += Math.abs(dx); dragOffset += dx * 0.25; vel = dx * 0.25; }
-  });
-  const up = () => { dragging = false; if (cursor) cursor.classList.remove("is-grab"); };
-  stage.addEventListener("pointerup", up);
-  stage.addEventListener("pointercancel", up);
-  cards.forEach((c) => c.addEventListener("click", (e) => { if (moved > 6) e.preventDefault(); }));
+  // Curseur « Glisser »
+  const cursor = stage.querySelector("[data-pano-cursor]");
   if (cursor) {
+    let tx = 0, ty = 0, cx = 0, cy = 0;
+    const follow = () => { cx += (tx - cx) * 0.2; cy += (ty - cy) * 0.2; cursor.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`; window._panoCursorRAF = requestAnimationFrame(follow); };
+    follow();
     stage.addEventListener("pointerenter", () => cursor.classList.add("is-on"));
-    stage.addEventListener("pointerleave", () => { cursor.classList.remove("is-on"); up(); });
+    stage.addEventListener("pointerleave", () => cursor.classList.remove("is-on"));
+    stage.addEventListener("pointermove", (e) => { const r = stage.getBoundingClientRect(); tx = e.clientX - r.left; ty = e.clientY - r.top; });
+    stage.addEventListener("pointerdown", () => cursor.classList.add("is-grab"));
+    window.addEventListener("pointerup", () => cursor.classList.remove("is-grab"));
   }
 }
 
