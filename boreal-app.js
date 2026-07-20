@@ -68,7 +68,7 @@ function initOnce() {
   onceInitialized = true;
   initLenis();
   initAnchorSmoothScroll();
-  initTwostepScalingNavigation();
+  initBoldFullScreenNavigation();
   initCursorMarqueeEffect();
   initFixedUnderlayNavigation(); // panneau formulaire soumission (persistant)
   initAdvancedFormValidation();  // validation live du formulaire (Osmo) — persistant
@@ -205,8 +205,9 @@ function initBarba() {
 // HELPERS
 // -----------------------------------------
 function closeNav() {
-  const s = document.querySelector("[data-nav-status]");
-  if (s) s.setAttribute("data-nav-status", "not-active");
+  const s = document.querySelector("[data-navigation-status]");
+  if (s) s.setAttribute("data-navigation-status", "not-active");
+  if (window.lenis) window.lenis.start();
 }
 
 function closeModals() {
@@ -295,21 +296,23 @@ function initBarbaNavUpdate(data) {
 // MODULES  (définitions — sans DOMContentLoaded ni registerPlugin)
 // =========================================================
 
-// ---- NAV : two-step scaling ----
-function initTwostepScalingNavigation() {
-  const navElement = document.querySelector("[data-twostep-nav]");
-  const navStatusEl = document.querySelector("[data-nav-status]");
-  if (!navElement || !navStatusEl) return;
+// ---- NAV : bold full-screen ----
+function initBoldFullScreenNavigation() {
+  const getNav = () => document.querySelector("[data-navigation-status]");
+  const setStatus = (v) => { const el = getNav(); if (el) el.setAttribute("data-navigation-status", v); };
+  const isActive = () => { const el = getNav(); return !!el && el.getAttribute("data-navigation-status") === "active"; };
+  const openNav = () => { setStatus("active"); if (window.lenis) window.lenis.stop(); };
+  const closeNavMenu = () => { setStatus("not-active"); if (window.lenis) window.lenis.start(); };
+  const toggleNav = () => (isActive() ? closeNavMenu() : openNav());
 
-  const setNavStatus = (status) => navStatusEl.setAttribute("data-nav-status", status);
-  const isActive = () => navStatusEl.getAttribute("data-nav-status") === "active";
-  const openNav = () => setNavStatus("active");
-  const closeNavLocal = () => setNavStatus("not-active");
-  const toggleNav = () => (isActive() ? closeNavLocal() : openNav());
-
-  document.querySelectorAll('[data-nav-toggle="toggle"]').forEach((btn) => btn.addEventListener("click", toggleNav));
-  document.querySelectorAll('[data-nav-toggle="close"]').forEach((btn) => btn.addEventListener("click", closeNavLocal));
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && isActive()) closeNavLocal(); });
+  // Délégation sur document : survit aux swaps Barba (les boutons peuvent être re-rendus)
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest && e.target.closest('[data-navigation-toggle="toggle"]');
+    const c = e.target.closest && e.target.closest('[data-navigation-toggle="close"]');
+    if (t) { e.preventDefault(); toggleNav(); }
+    else if (c) { e.preventDefault(); closeNavMenu(); }
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && isActive()) closeNavMenu(); });
 }
 
 // ---- BOUTONS : stagger caractères (guardé pour ne pas re-wrapper) ----
@@ -1251,7 +1254,7 @@ function initFixedUnderlayNavigation() {
   // Revers : le transform d'ouverture réancre son position:fixed sur [data-main] → après un
   // scroll de S px elle part S px trop haut (elle « disparaît »). On la compense de translateY(S)
   // à l'ouverture (et on gèle le scroll de fond pour que S reste constant), nettoyé à la fermeture.
-  const navFixed = document.querySelector("[data-twostep-nav]");
+  const navFixed = document.querySelector("[data-navigation-status]");
   const getScrollY = () => (window.lenis ? window.lenis.scroll : window.scrollY) || 0;
   const clearTargets = navFixed ? [mainEl, overlayEl, navFixed] : [mainEl, overlayEl];
 

@@ -61,10 +61,18 @@ rempli). Largeur/hauteur des cartes, perspective, tilt et hauteur de section son
   Requiert `[data-form-validate]` (parent), `[data-validate]` (chaque groupe), `[data-submit]`
   (autour du `input[type=submit]`). Couleur d'erreur = token `--_primitives---colors--carnation`.
   Anti-spam : rejet si soumission < 5 s.
-- Nav : `[data-twostep-nav]` reste DANS `[data-main]` (pour coulisser avec la page à l'ouverture).
+- Nav : la nav `[data-navigation-status]` reste DANS `[data-main]` (pour coulisser avec la page à l'ouverture).
   Le `transform` d'ouverture réancrait son `position:fixed` → après scroll elle sautait hors écran.
   Fix (`initFixedUnderlayNavigation`) : `translateY(scrollY)` sur la nav à l'ouverture + `lenis.stop()`
   (fond gelé), nettoyé à la fermeture. Global (toutes pages), rien à faire dans le Designer.
+
+### Menu — bold full-screen (Osmo) — remplace le two-step scaling
+Module `initBoldFullScreenNavigation` (persistant, `initOnce`). Toggle/close via
+`[data-navigation-toggle="toggle"|"close"]` (délégation sur `document` → survit aux swaps Barba),
+statut sur `[data-navigation-status]` (`active`/`not-active`), ESC ferme. Intègre `lenis.stop()`
+à l'ouverture / `lenis.start()` à la fermeture. CSS `.bold-nav-full__*` dans `boreal-styles.css`
+(hamburger, tile clip-path plein écran, liens qui montent en cascade + hover). L'ancien
+`initTwostepScalingNavigation` / `.twostep-nav__*` est retiré.
 
 ## URLs CDN (jsDelivr)
 ```
