@@ -5,7 +5,8 @@ Fichiers statiques (JS/CSS) servis en CDN via **jsDelivr** pour le site Webflow
 
 ## Fichiers
 - `boreal-app.js` — tous les modules (nav, curseur, parallax, split titres, hero Flip,
-  hero bg-zoom, stacking cards, depth tiles, odometer, logo wall, panorama 3D réalisations, footer
+  hero bg-zoom, stacking cards, depth tiles, **radial cards slider** (Osmo/GSAP Draggable), odometer,
+  logo wall, panorama 3D réalisations, footer
   parallax, parallax image layers (hero Réalisation T07), mini showreel player (Flip, T07),
   layered image slider (Observer/CustomEase, T07), panneau formulaire underlay,
   **validation formulaire live** Osmo) + le harnais
@@ -27,7 +28,30 @@ staggerées), chacune à un **angle de repos différent** (`[-6,-2.5,2.5,6]°`),
 largeur, sans chevauchement** (4 → 2 → 1 col) est dans `boreal-styles.css` (`.cards-stack__list`
 en `flex-direction:row` + gap normal, `.cards-stack__item` en `flex:1 1 0`, container
 full-bleed). ⚠️ Le custom code ne tourne pas dans le canvas Designer → juger le rendu sur
-l'**URL publiée**.
+l'**URL publiée**. Le **liseré coloré rotatif** (`conic-gradient` par carte) autour de ces box a été
+**retiré** (Userback) : les cartes sont désormais sans contour. Le keyframe `brd-spin` reste utilisé
+par les cartes chiffres STATS26 (pages service).
+
+### Section Types d'événements — radial cards slider (Osmo/GSAP, remplace depth-tiles)
+`initRadialCardsSlider` : slider en **roue radiale** (composant Osmo « Radial Cards Slider GSAP »)
+piloté par GSAP **Draggable + InertiaPlugin** (drag + inertie) et boutons `prev`/`next`. Remplace
+l'ancien `depth-tiles` pour présenter les types d'événements (cartes en **format paysage**). Clone
+automatiquement les items pour remplir la roue et boucler. Barba-safe : un registre `_radialSliders`
+tue le Draggable + retire le proxy à chaque ré-init. Ease `"radial"` créée au boot.
+
+**Structure Webflow attendue** (structure Osmo standard) :
+```
+[data-radial-slider-init]              (.radial-gsap-slider)
+  [data-radial-slider-collection]
+    [data-radial-slider-list]
+      [data-radial-slider-item] × N    (.radial-card à l'intérieur)
+  [data-radial-slider-control="prev"] / ["next"]   (boutons ; dots/compteur optionnels)
+```
+Géométrie via 2 variables CSS (`boreal-styles.css`) réglées pour le paysage : `--slider-rotate`
+(écart angulaire entre cartes) et `--slider-radius` (rayon, en % de la hauteur d'une carte).
+⚠️ Rendu visible **uniquement sur l'URL publiée** → ajuster ces 2 valeurs à l'œil après publication.
+⚠️ Encore présent sur T02 sous forme de `depth-tiles` (`initDepthTiles`) — le retrait de l'ancien
+module n'aura lieu qu'une fois T02 migré vers le radial.
 
 ### Section Réalisations — panorama 3D (remplace le tornado, Userback #8034641)
 `initPanoramaCarousel` (remplace l'ancien `init3DCardsTornado`, retiré) : cylindre 3D façon

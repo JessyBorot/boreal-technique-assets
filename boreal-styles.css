@@ -70,21 +70,8 @@
 @media (hover: none) and (pointer: coarse) { [data-cursor-marquee-status] { display: none; } }
 
 
-/* ===== STACKING CARDS (services) — liseré tournant ===== */
-.cards-stack-card { --c: var(--_primitives---colors--dodger-blue); --speed: 4.5s; --thickness: 1.6px; position: relative; isolation: isolate; box-shadow: 0 0 0 1px rgb(from var(--c) r g b / .16); }
-.cards-stack-card::before {
-  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: var(--thickness);
-  background: conic-gradient(from var(--brd-angle), rgb(from var(--c) r g b / 0) 0deg, rgb(from var(--c) r g b / 0) 60deg, rgb(from var(--c) r g b / .85) 90deg, rgb(from var(--c) r g b / .15) 120deg, rgb(from var(--c) r g b / 0) 170deg, rgb(from var(--c) r g b / 0) 360deg);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor; mask-composite: exclude; animation: brd-spin var(--speed) linear infinite; pointer-events: none; z-index: 2;
-}
-.cards-stack-card.first { --c: var(--_primitives---colors--dodger-blue); }   /* Intérieurs */
-.cards-stack-card.scnd  { --c: var(--_primitives---colors--shamrock); }      /* Extérieurs */
-.cards-stack-card.third { --c: var(--_primitives---colors--carnation); }     /* Scènes mobiles */
-.cards-stack-card.four  { --c: var(--_primitives---colors--cornflower-blue); } /* Installations */
-@media (prefers-reduced-motion: reduce) {
-  .cards-stack-card::before { animation: none; background: linear-gradient(120deg, rgb(from var(--c) r g b / 0), rgb(from var(--c) r g b / .6), rgb(from var(--c) r g b / 0)); }
-}
+/* ===== STACKING CARDS (services) — liseré retiré (Userback, Option A) ===== */
+.cards-stack-card { position: relative; }
 
 
 /* ===== DEPTH TILES (secteurs) ===== */
@@ -348,3 +335,29 @@
 @media screen and (max-width: 767px) {
   .cards-stack__item { flex: 1 1 100% !important; }
 }
+
+
+/* ===== RADIAL CARDS SLIDER (Osmo, GSAP) — section « types d'événements » (remplace l'ancien depth-tiles) =====
+   JS = boreal-app.js (initRadialCardsSlider). Le positionnement absolu des items + leur taille viennent du
+   composant Webflow (.radial-gsap-slider__item / .radial-card). Ici : la géométrie de la roue + le format PAYSAGE.
+   ⚠️ Le custom code ne s'exécute PAS dans le canvas Designer → juger le rendu sur l'URL PUBLIÉE, pas dans le Designer.
+     --slider-rotate : angle entre deux cartes (↑ = cartes plus espacées angulairement).
+     --slider-radius : rayon de la roue, en % de la HAUTEUR d'une carte (↑ = arc plus plat, cartes moins « penchées »).
+   Cartes paysage = larges → il faut plus d'écart que le défaut Osmo (18deg / 375%). Valeurs de départ ci-dessous,
+   à ajuster à l'œil une fois publié (si les cartes se chevauchent : monter --slider-rotate ; si l'arc est trop bombé :
+   monter --slider-radius). */
+[data-radial-slider-init] {
+  --slider-rotate: 20deg;
+  --slider-radius: 520%;
+}
+[data-radial-slider-list] > :first-child { position: relative; }
+.radial-gsap-slider__control-dot[data-radial-slider-control-status="active"] { color: var(--_primitives---colors--dodger-blue); }
+
+@media screen and (max-width: 767px) {
+  [data-radial-slider-init] { --slider-rotate: 16deg; --slider-radius: 620%; }
+  [data-radial-slider-item] { width: 20em; } /* paysage mobile (le défaut Osmo portrait = 15em) */
+}
+
+/* Le custom code ne tournant pas dans le Designer, on affiche les cartes en rangée scrollable pour pouvoir les éditer. */
+:is(.wf-design-mode, .wf-editor) [data-radial-slider-list] { justify-content: flex-start; overflow: scroll; gap: 1.5em; }
+:is(.wf-design-mode, .wf-editor) [data-radial-slider-item] { position: relative; }
