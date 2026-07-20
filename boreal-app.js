@@ -1152,7 +1152,10 @@ function initPanoramaCarousel() {
   let R = 900, scrollP = 0, dragOffset = 0, vel = 0, dragging = false, lastX = 0, moved = 0;
 
   function layout() {
-    const w = cards[0].offsetWidth || 360, gap = 40;
+    // Les liens .w-inline-block ont max-width:100% → 100% de l'anneau (0px large) = 0 → largeur écrasée.
+    // On neutralise (inline !important) pour que la carte reprenne la largeur de son contenu.
+    cards.forEach((c) => c.style.setProperty("max-width", "none", "important"));
+    const w = cards[0].offsetWidth || (cards[0].firstElementChild && cards[0].firstElementChild.offsetWidth) || 340, gap = 40;
     R = Math.round((w + gap) / (2 * Math.sin(Math.PI / N)));
     cards.forEach((c, i) => { c.style.transform = `translate(-50%, -50%) rotateY(${i * theta}deg) translateZ(${R}px)`; });
   }
