@@ -100,7 +100,7 @@ function runPageModulesOnce(container) {
     initAccordionCSS,        // accordéon CSS (Osmo) — FAQ
     initNumberOdometer,
     initLogoWallCycle,
-    init3DCardsTornado,
+    initPanoramaCarousel,
     initFooterParallax
   ];
   modules.forEach((fn) => {
@@ -257,7 +257,7 @@ function resetPage(container) {
   if (hasLenis) { lenis.resize(); lenis.start(); }
 }
 
-// Recale les ScrollTriggers après stabilisation du layout (images, clones tornado,
+// Recale les ScrollTriggers après stabilisation du layout (images, cartes panorama,
 // rollers odometer…). En navigation SPA il n'y a pas de window.load → sans ça, des
 // triggers (ex. footer parallax) sont mesurés trop tôt → glitch. Correctif : refresh
 // immédiat + après 2 RAF + délais + à chaque image du nouveau container qui se charge.
@@ -1126,92 +1126,79 @@ function initLogoWallCycle() {
   });
 }
 
-// ---- 3D CARDS TORNADO (réalisations) ----
-function init3DCardsTornado() {
-  const containers = gsap.utils.toArray("[data-3d-tornado-init]");
-  const rotationAngle = 30, cardYSpacing = 0.3, edgeOffset = 2, orbitDepth = 62, autoSpeed = 0.00325, scrollSpeed = 0.015, dragMultiplier = 5, scrollEase = 0.1, maxSpeed = 0.2, edgeScale = 0.5, minScale = 1, backDarkness = 0.75, backBlur = 0.5;
-  const edgeEase = gsap.parseEase("power2.inOut");
+// ---- RÉALISATIONS — panorama 3D (carrousel cylindrique, piloté par le scroll) ----
+// Remplace l'ancien tornado. Anneau de cartes ; la rotation SUIT la progression du scroll
+// pendant que la section traverse l'écran (PAS d'épinglage → on ne bloque pas le scroll).
+// Drag en complément. Structure Webflow attendue :
+//   [data-pano] (section) > [data-pano-ring] (Collection List) > [data-pcard] (Collection Item = lien)
+//   + [data-pano-cursor] (bulle « Glisser ») dans la section.
+function initPanoramaCarousel() {
+  if (window._panoRAF) { cancelAnimationFrame(window._panoRAF); window._panoRAF = null; }
+  if (window._panoResize) { window.removeEventListener("resize", window._panoResize); window._panoResize = null; }
+  const stage = document.querySelector("[data-pano]");
+  if (!stage) return;
+  ScrollTrigger.getAll().forEach((t) => { if (t.trigger && stage.contains(t.trigger)) t.kill(); });
+  const ring = stage.querySelector("[data-pano-ring]");
+  const cursor = stage.querySelector("[data-pano-cursor]");
+  const cards = ring ? Array.from(ring.querySelectorAll("[data-pcard]")) : [];
+  if (!ring || !cards.length) return;
 
-  containers.forEach((container) => {
-    const list = container.querySelector("[data-3d-tornado-list]");
-    const originalCards = gsap.utils.toArray("[data-3d-tornado-item]", list).map((card) => card.cloneNode(true));
-    if (!list || !originalCards.length) return;
-    let inputObserver, resizeTimer;
-    const state = { amount: 0, progress: 0, velocity: autoSpeed, direction: 1, cardHeight: 0, cardGap: 0, em: 16, isActive: false, isHover: false, cards: [] };
+  const N = cards.length, theta = 360 / N, TURN = 360;
+  const TILT = "rotateZ(4deg) rotateX(7deg)";
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let R = 900, scrollP = 0, dragOffset = 0, vel = 0, dragging = false, lastX = 0, moved = 0;
 
-    function getCardAmount() {
-      const containerHalfHeight = container.offsetHeight * 0.5;
-      const edgeOffsetDistance = state.cardHeight * edgeOffset;
-      const fadeDistance = state.cardHeight * edgeScale;
-      const neededDistance = containerHalfHeight + edgeOffsetDistance + fadeDistance;
-      const cardsPerSide = Math.ceil(neededDistance / state.cardGap) + 1;
-      const neededAmount = cardsPerSide * 2 + 1;
-      const batchCount = Math.ceil(neededAmount / originalCards.length);
-      return originalCards.length * batchCount;
-    }
-    function buildCards() {
-      list.innerHTML = "";
-      const measureCard = originalCards[0].cloneNode(true);
-      list.appendChild(measureCard);
-      state.cardHeight = measureCard.offsetHeight;
-      state.cardGap = state.cardHeight * cardYSpacing;
-      state.em = parseFloat(getComputedStyle(measureCard).fontSize);
-      state.amount = getCardAmount();
-      list.innerHTML = "";
-      for (let i = 0; i < state.amount; i++) { const card = originalCards[i % originalCards.length].cloneNode(true); card.dataset.index = i; list.appendChild(card); }
-      state.cards = gsap.utils.toArray("[data-3d-tornado-item]", list);
-    }
-    function getEdgeScale(y) {
-      const containerHalfHeight = container.offsetHeight * 0.5;
-      const edgeOffsetDistance = state.cardHeight * edgeOffset;
-      const fadeDistance = state.cardHeight * edgeScale;
-      const distanceFromCenter = Math.abs(y);
-      const fadeStart = containerHalfHeight + edgeOffsetDistance;
-      const progress = gsap.utils.clamp(0, 1, (fadeStart - distanceFromCenter) / fadeDistance);
-      return edgeEase(progress);
-    }
-    function render() {
-      const radius = orbitDepth * state.em;
-      state.cards.forEach((card) => {
-        const startIndex = parseFloat(card.dataset.index);
-        const loopIndex = ((startIndex + state.progress) % state.amount + state.amount) % state.amount;
-        const index = loopIndex > state.amount * 0.5 ? loopIndex - state.amount : loopIndex;
-        const angleDeg = index * rotationAngle;
-        const angleRad = (angleDeg * Math.PI) / 180;
-        const center = 1 - Math.min(Math.abs(index) / (state.amount * 0.5), 1);
-        const y = index * state.cardGap;
-        const baseScale = minScale + center * (1 - minScale);
-        const scale = baseScale * getEdgeScale(y);
-        const backAmount = gsap.utils.clamp(0, 1, (1 - Math.cos(angleRad)) * 0.5);
-        const brightness = 1 - backAmount * backDarkness;
-        const blur = backAmount * backBlur;
-        gsap.set(card, { xPercent: -50, yPercent: -50, x: Math.sin(angleRad) * radius, y, z: (Math.cos(angleRad) - 1) * radius, rotateY: angleDeg, scale, filter: `brightness(${brightness}) blur(${blur}em)`, autoAlpha: 1, zIndex: Math.round(center * 1000) });
-      });
-    }
-    function tick() {
-      if (!state.isActive) return;
-      const targetVelocity = autoSpeed * state.direction;
-      state.velocity = gsap.utils.interpolate(state.velocity, targetVelocity, scrollEase);
-      state.progress += state.velocity;
-      render();
-    }
-    function handleInput(self) {
-      if (!state.isActive) return;
-      const delta = self.event.type === "wheel" ? self.deltaY : Math.abs(self.deltaX) > Math.abs(self.deltaY) ? self.deltaX * dragMultiplier : self.deltaY * dragMultiplier;
-      if (!delta) return;
-      state.direction = delta > 0 ? 1 : -1;
-      state.velocity += (delta * scrollSpeed) / 100;
-      state.velocity = gsap.utils.clamp(-maxSpeed, maxSpeed, state.velocity);
-    }
-    function setActive(isActive) { state.isActive = isActive; if (!inputObserver) return; isActive ? inputObserver.enable() : inputObserver.disable(); }
-    function rebuild() { buildCards(); render(); }
-    rebuild();
-    inputObserver = Observer.create({ target: window, type: "wheel,touch,pointer", preventDefault: false, lockAxis: true, onChange: handleInput, onPress: () => { container.style.cursor = "grabbing"; }, onRelease: () => { container.style.cursor = "grab"; } });
-    ScrollTrigger.create({ trigger: container, start: "top bottom", end: "bottom top", onEnter: () => setActive(true), onEnterBack: () => setActive(true), onLeave: () => setActive(false), onLeaveBack: () => setActive(false) });
-    setActive(ScrollTrigger.isInViewport(container));
-    gsap.ticker.add(tick);
-    window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { rebuild(); ScrollTrigger.refresh(); }, 150); });
+  function layout() {
+    const w = cards[0].offsetWidth || 360, gap = 40;
+    R = Math.round((w + gap) / (2 * Math.sin(Math.PI / N)));
+    cards.forEach((c, i) => { c.style.transform = `translate(-50%, -50%) rotateY(${i * theta}deg) translateZ(${R}px)`; });
+  }
+  function render() {
+    const rot = scrollP * TURN + dragOffset;
+    ring.style.transform = `${TILT} translateZ(${-R}px) rotateY(${rot}deg)`;
+    cards.forEach((c, i) => {
+      const a = (((i * theta + rot) % 360) + 540) % 360 - 180;   // -180..180, 0 = face
+      const f = Math.cos((a * Math.PI) / 180);                   // 1 devant, -1 derrière
+      c.style.opacity = (0.12 + 0.88 * Math.max(0, f + 0.1)).toFixed(3);
+      c.style.filter = `brightness(${(0.4 + 0.6 * Math.max(0, f)).toFixed(3)})`;
+      c.style.pointerEvents = f > 0.7 ? "auto" : "none";
+      c.style.zIndex = String(Math.round(f * 100) + 100);
+    });
+  }
+  layout(); render();
+  window._panoResize = () => { layout(); render(); };
+  window.addEventListener("resize", window._panoResize);
+
+  // Rotation pilotée par le scroll (section de hauteur normale → non-bloquant)
+  ScrollTrigger.create({
+    trigger: stage, start: "top bottom", end: "bottom top",
+    onUpdate: (self) => { scrollP = self.progress; if (reduce) render(); },
+    onRefresh: (self) => { scrollP = self.progress; if (reduce) render(); }
   });
+
+  if (reduce) return; // pas de boucle d'inertie ni de drag continu en reduced-motion
+
+  function loop() {
+    if (!dragging) { dragOffset += vel; vel *= 0.92; if (Math.abs(vel) < 0.01) vel = 0; }
+    render();
+    window._panoRAF = requestAnimationFrame(loop);
+  }
+  loop();
+
+  // Drag = complément (offset qui s'ajoute à la rotation du scroll) + curseur « Glisser »
+  stage.addEventListener("pointerdown", (e) => { dragging = true; lastX = e.clientX; moved = 0; vel = 0; if (cursor) cursor.classList.add("is-grab"); try { stage.setPointerCapture(e.pointerId); } catch (_) {} });
+  stage.addEventListener("pointermove", (e) => {
+    if (cursor) { const r = stage.getBoundingClientRect(); cursor.style.transform = `translate(${e.clientX - r.left}px, ${e.clientY - r.top}px) translate(-50%, -50%)`; }
+    if (dragging) { const dx = e.clientX - lastX; lastX = e.clientX; moved += Math.abs(dx); dragOffset += dx * 0.25; vel = dx * 0.25; }
+  });
+  const up = () => { dragging = false; if (cursor) cursor.classList.remove("is-grab"); };
+  stage.addEventListener("pointerup", up);
+  stage.addEventListener("pointercancel", up);
+  cards.forEach((c) => c.addEventListener("click", (e) => { if (moved > 6) e.preventDefault(); }));
+  if (cursor) {
+    stage.addEventListener("pointerenter", () => cursor.classList.add("is-on"));
+    stage.addEventListener("pointerleave", () => { cursor.classList.remove("is-on"); up(); });
+  }
 }
 
 // ---- MODALES (Osmo basic modal B) — pop-ups secteurs ----

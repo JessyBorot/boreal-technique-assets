@@ -126,13 +126,14 @@
 }
 
 
-/* ===== 3D TORNADO (réalisations) ===== */
-:is(.wf-design-mode, .wf-editor) [data-3d-tornado-list] { display: flex; align-items: center; gap: 1em; overflow: scroll; max-width: 100vw; }
-:is(.wf-design-mode, .wf-editor) [data-3d-tornado-item] { position: relative; top: unset; left: unset; transform: unset; }
-.cards-tornado__item .cover-image { transition: filter .5s cubic-bezier(.625,.05,0,1); }
-.cards-tornado__item:hover .cover-image { filter: brightness(.4); }
-.cards-tornado__item .tag { z-index: 2; opacity: 0; transform: translateY(-.6em); transition: opacity .5s cubic-bezier(.625,.05,0,1), transform .5s cubic-bezier(.625,.05,0,1); }
-.cards-tornado__item:hover .tag { opacity: 1; transform: translateY(0); }
+/* ===== RÉALISATIONS — panorama 3D (carrousel cylindrique piloté au scroll) ===== */
+[data-pano] { position: relative; height: min(90vh, 820px); perspective: 1500px; overflow: hidden; cursor: none; -webkit-user-select: none; user-select: none; touch-action: pan-y; }
+[data-pano-ring] { position: absolute; top: 50%; left: 50%; width: 0; height: 0; transform-style: preserve-3d; will-change: transform; }
+[data-pcard] { position: absolute; top: 50%; left: 50%; width: clamp(300px, 27vw, 460px); backface-visibility: hidden; will-change: transform, opacity; text-decoration: none; }
+[data-pano-cursor] { position: absolute; top: 0; left: 0; z-index: 30; pointer-events: none; opacity: 0; transform: translate(-50%, -50%) scale(.6); transition: opacity .3s, scale .2s; background: var(--_primitives---colors--dodger-blue); color: #04121c; font-weight: 600; font-size: .82rem; padding: .7rem 1rem; border-radius: 100px; display: flex; align-items: center; gap: .45rem; white-space: nowrap; }
+[data-pano-cursor].is-on { opacity: 1; scale: 1; }
+[data-pano-cursor].is-grab { scale: .78; }
+@media (hover: none) { [data-pano] { cursor: grab; } [data-pano-cursor] { display: none; } }
 
 
 /* ===== MODALES (Osmo basic modal B) — pop-ups secteurs ===== */

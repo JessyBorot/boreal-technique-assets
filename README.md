@@ -5,7 +5,7 @@ Fichiers statiques (JS/CSS) servis en CDN via **jsDelivr** pour le site Webflow
 
 ## Fichiers
 - `boreal-app.js` — tous les modules (nav, curseur, parallax, split titres, hero Flip,
-  hero bg-zoom, stacking cards, depth tiles, odometer, logo wall, 3D tornado, footer
+  hero bg-zoom, stacking cards, depth tiles, odometer, logo wall, panorama 3D réalisations, footer
   parallax, parallax image layers (hero Réalisation T07), mini showreel player (Flip, T07),
   layered image slider (Observer/CustomEase, T07), panneau formulaire underlay,
   **validation formulaire live** Osmo) + le harnais
@@ -28,6 +28,27 @@ largeur, sans chevauchement** (4 → 2 → 1 col) est dans `boreal-styles.css` (
 en `flex-direction:row` + gap normal, `.cards-stack__item` en `flex:1 1 0`, container
 full-bleed). ⚠️ Le custom code ne tourne pas dans le canvas Designer → juger le rendu sur
 l'**URL publiée**.
+
+### Section Réalisations — panorama 3D (remplace le tornado, Userback #8034641)
+`initPanoramaCarousel` (remplace l'ancien `init3DCardsTornado`, retiré) : les cartes sont
+disposées sur un **anneau 3D cylindrique** (façon Netfolie). La rotation **suit la progression
+du scroll** pendant que la section traverse l'écran (ScrollTrigger `onUpdate`, **PAS
+d'épinglage** → on ne bloque pas, on passe librement à la section suivante). **Drag** en
+complément (offset + inertie) et **curseur « Glisser »** qui suit la souris. Angle de repos
+via un tilt `rotateZ(4deg) rotateX(7deg)`. Barba-safe (annule rAF + kill ScrollTriggers +
+retire le listener resize à chaque ré-init).
+
+**Structure Webflow attendue :**
+```
+[data-pano]            (section)
+  [data-pano-ring]     (Collection List — wrapper des cartes)
+    [data-pcard]       (Collection Item = lien vers l'étude de cas ; 1 par réalisation)
+      … image + titre + tag …
+  [data-pano-cursor]   (div « Glisser » ; optionnel mais recommandé)
+```
+Le nombre de cartes = nombre d'items de la Collection (idéalement ~10-14 pour un anneau bien
+rempli). Largeur/hauteur des cartes, perspective, tilt et hauteur de section sont gérés par
+`boreal-styles.css` (surchargeables). ⚠️ Rendu visible **uniquement sur l'URL publiée**.
 
 ### Formulaire underlay (soumission)
 - Panneau latéral persistant (`initFixedUnderlayNavigation`) ouvert par tout `[data-underlay-nav-toggle]`.
