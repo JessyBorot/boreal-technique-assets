@@ -95,6 +95,7 @@ function runPageModulesOnce(container) {
     initStackingStickyCardsBounce,
     initDepthTiles,          // ancien composant « secteurs » — encore utilisé par T02 (à retirer une fois T02 migré vers le radial)
     initRadialCardsSlider,   // slider radial (Osmo, GSAP Draggable) — nouvelle section « types d'événements »
+    initMasonryGrid,         // grid masonry (Osmo) — section « spécialisations » T02 (remplace les cartes icônes)
     initModalBasic,          // pop-ups (Osmo modal B) — secteurs T02
     initMarqueeScrollDirection, // marquee direction-au-scroll (Osmo) — section clé en main
     initStickyStepsBasic,    // étapes sticky (Osmo, version GSAP ScrollTrigger) — processus
@@ -1294,6 +1295,85 @@ function initRadialCardsSlider() {
     _radialResizeHandler = debounceOnWidthChange(initRadialCardsSlider, 200);
     window.addEventListener("resize", _radialResizeHandler);
   }
+}
+
+// ---- MASONRY GRID (Osmo) — section « spécialisations » T02 (remplace les cartes icônes) ----
+// [data-masonry-list] : les enfants directs = items. Colonnes/gap pilotés par le CSS
+// (--masonry-col / --masonry-gap, par breakpoint). data-masonry-shuffle="false" = préserve l'ordre HTML.
+// Positionne les items en absolute + fixe la hauteur du container. Recalcule au resize et au chargement
+// des images. Barba-safe : registre global → destroy des instances de la page précédente à chaque ré-init.
+let _masonryGrids = [];
+function initMasonryGrid() {
+  _masonryGrids.forEach((g) => { try { g.destroy(); } catch (_) {} });
+  _masonryGrids = [];
+
+  document.querySelectorAll("[data-masonry-list]").forEach((container) => {
+    const shuffle = container.dataset.masonryShuffle !== "false";
+    let cols, gapPx, colHeights;
+
+    const getVars = () => {
+      const cs = getComputedStyle(container);
+      cols = parseInt(cs.getPropertyValue("--masonry-col"));
+      const rawGap = cs.getPropertyValue("--masonry-gap").trim();
+      if (rawGap.endsWith("px")) gapPx = parseFloat(rawGap);
+      else if (rawGap.endsWith("rem")) gapPx = parseFloat(rawGap) * parseFloat(getComputedStyle(document.documentElement).fontSize);
+      else if (rawGap.endsWith("em")) gapPx = parseFloat(rawGap) * parseFloat(cs.fontSize);
+      else gapPx = parseFloat(rawGap);
+    };
+
+    const layout = () => {
+      getVars();
+      if (!cols || cols < 1) return;
+      const wCalc = `(100% - ${cols - 1}*var(--masonry-gap)) / ${cols}`;
+      colHeights = Array(cols).fill(0);
+      container.style.position = "relative";
+      const items = Array.from(container.children);
+      items.forEach((el) => {
+        el.style.position = "absolute";
+        el.style.width = `calc(${wCalc})`;
+      });
+      items.forEach((el, i) => {
+        const h = el.offsetHeight;
+        const idx = shuffle ? colHeights.indexOf(Math.min(...colHeights)) : i % cols;
+        el.style.top = `${colHeights[idx]}px`;
+        el.style.left = `calc(${wCalc}*${idx} + var(--masonry-gap)*${idx})`;
+        colHeights[idx] += h + gapPx;
+      });
+      container.style.height = `${Math.max(...colHeights)}px`;
+      if (hasScrollTrigger) ScrollTrigger.refresh(); // la hauteur du container change → recale les triggers
+    };
+
+    const debounce = (fn, delay) => { let t; return () => { clearTimeout(t); t = setTimeout(fn, delay); }; };
+    const onResize = debounce(layout, 100);
+    window.addEventListener("resize", onResize);
+
+    const debouncedLayout = debounce(layout, 50);
+    const imgLoad = () => {
+      container.querySelectorAll("img").forEach((img) => {
+        if (!img.complete) {
+          img.addEventListener("load", debouncedLayout, { once: true });
+          img.addEventListener("error", debouncedLayout, { once: true });
+        }
+      });
+    };
+
+    layout();
+    imgLoad();
+    if (document.fonts) document.fonts.ready.then(layout);
+
+    container._masonry = {
+      recalc: () => { layout(); imgLoad(); },
+      destroy: () => {
+        window.removeEventListener("resize", onResize);
+        Array.from(container.children).forEach((el) => {
+          el.style.position = el.style.width = el.style.top = el.style.left = "";
+        });
+        container.style.position = container.style.height = "";
+        container._masonry = null;
+      }
+    };
+    _masonryGrids.push(container._masonry);
+  });
 }
 
 // ---- ODOMETER (chiffres) ----

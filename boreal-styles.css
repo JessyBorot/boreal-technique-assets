@@ -361,3 +361,18 @@
 /* Le custom code ne tournant pas dans le Designer, on affiche les cartes en rangée scrollable pour pouvoir les éditer. */
 :is(.wf-design-mode, .wf-editor) [data-radial-slider-list] { justify-content: flex-start; overflow: scroll; gap: 1.5em; }
 :is(.wf-design-mode, .wf-editor) [data-radial-slider-item] { position: relative; }
+
+
+/* ===== MASONRY GRID (Osmo) — section « spécialisations » T02 (remplace les cartes icônes) =====
+   JS = boreal-app.js (initMasonryGrid) : lit --masonry-col (nb de colonnes) et --masonry-gap (écart)
+   pour positionner les items. ⚠️ Rendu visible uniquement sur l'URL PUBLIÉE (pas dans le canvas Designer). */
+[data-masonry-list] {
+  --masonry-col: 4;
+  --masonry-gap: 1em;
+}
+@media screen and (max-width: 991px) {
+  [data-masonry-list] { --masonry-col: 3; --masonry-gap: 1em; }
+}
+@media screen and (max-width: 767px) {
+  [data-masonry-list] { --masonry-col: 2; --masonry-gap: 0.5em; }
+}

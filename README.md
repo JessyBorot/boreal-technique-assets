@@ -82,6 +82,16 @@ Le nombre de cartes = nombre d'items de la Collection (idéalement ~10-14 pour u
 rempli). Largeur/hauteur des cartes, perspective, tilt et hauteur de section sont gérés par
 `boreal-styles.css` (surchargeables). ⚠️ Rendu visible **uniquement sur l'URL publiée**.
 
+### Section Spécialisations T02 — masonry grid (Osmo, remplace les cartes icônes, Userback #8034721)
+`initMasonryGrid` : grid **masonry** (colonnes de hauteurs inégales) sur `[data-masonry-list]`.
+Nombre de colonnes + gap via CSS (`--masonry-col` / `--masonry-gap`, 4 → 3 → 2 par breakpoint) ;
+le JS positionne les items en `absolute` et fixe la hauteur du container. Recalcule au resize, au
+chargement des images et des polices ; `ScrollTrigger.refresh()` après layout (la hauteur change).
+`data-masonry-shuffle="false"` préserve l'ordre HTML. Barba-safe (registre `_masonryGrids` → destroy
+des instances de la page précédente). Remplace l'ancienne rangée de **cartes icônes** (grid statique
+Webflow, sans code custom — retirée dans le Designer) qu'Hugo jugeait « pas pro ». ⚠️ Rendu visible
+**uniquement sur l'URL publiée**.
+
 ### Formulaire underlay (soumission)
 - Panneau latéral persistant (`initFixedUnderlayNavigation`) ouvert par tout `[data-underlay-nav-toggle]`.
 - `.underlay-nav__inner` : `data-lenis-prevent` (posé en JS) + `max-height:100svh; overflow-y:auto`
