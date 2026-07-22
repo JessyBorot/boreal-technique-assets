@@ -376,3 +376,90 @@
    prendre la pleine largeur. !important car Webflow impose flex:0 1 auto sur ces classes. */
 .masonry-wrap { flex: 1 1 auto !important; min-width: 0 !important; width: 100% !important; }
 .masonry-collection { width: 100% !important; }
+
+
+/* ===== BUNNY HLS PLAYER (Osmo advanced) — lecteur vidéo, page Réalisation (T07) =====
+   JS = boreal-app.js (initBunnyPlayer). Requiert hls.js (footer, avant boreal-app.js).
+   NB : cohabite avec les 4 règles .bunny-player__* de l'intégration showreel plus haut. */
+[data-bunny-player-init] :is(.bunny-player__placeholder, .bunny-player__dark, .bunny-player__playpause, .bunny-player__loading) {
+  transition: opacity 0.3s linear, visibility 0.3s linear;
+}
+[data-bunny-player-init][data-player-status="playing"] .bunny-player__placeholder,
+[data-bunny-player-init][data-player-status="paused"] .bunny-player__placeholder,
+[data-bunny-player-init][data-player-activated="true"][data-player-status="ready"] .bunny-player__placeholder {
+  opacity: 0;
+  visibility: hidden;
+}
+[data-bunny-player-init][data-player-status="paused"] .bunny-player__dark,
+[data-bunny-player-init][data-player-status="playing"][data-player-hover="active"] .bunny-player__dark {
+  opacity: 0.3;
+}
+[data-bunny-player-init][data-player-status="playing"] .bunny-player__dark {
+  opacity: 0;
+}
+[data-bunny-player-init][data-player-status="playing"] .bunny-player__playpause,
+[data-bunny-player-init][data-player-status="loading"] .bunny-player__playpause {
+  opacity: 0;
+}
+[data-bunny-player-init][data-player-status="playing"][data-player-hover="active"] .bunny-player__playpause {
+  opacity: 1;
+}
+[data-bunny-player-init][data-player-status="playing"] .bunny-player__play-svg,
+[data-bunny-player-init][data-player-status="loading"] .bunny-player__play-svg {
+  display: none;
+}
+[data-bunny-player-init][data-player-status="playing"] .bunny-player__pause-svg,
+[data-bunny-player-init][data-player-status="loading"] .bunny-player__pause-svg {
+  display: block;
+}
+[data-bunny-player-init][data-player-status="loading"] .bunny-player__loading {
+  opacity: 1;
+  visibility: visible;
+}
+.bunny-player__interface {
+  transition: all 0.6s cubic-bezier(0.625, 0.05, 0, 1);
+}
+[data-bunny-player-init][data-player-status="playing"] .bunny-player__interface,
+[data-bunny-player-init][data-player-status="loading"] .bunny-player__interface {
+  opacity: 0;
+  transform: translateY(1em) rotate(0.001deg);
+}
+[data-bunny-player-init][data-player-status="playing"][data-player-hover="active"] .bunny-player__interface,
+[data-bunny-player-init][data-player-status="loading"][data-player-hover="active"] .bunny-player__interface {
+  opacity: 1;
+  transform: translateY(0em) rotate(0.001deg);
+}
+[data-bunny-player-init][data-player-status="idle"][data-player-activated="false"] .bunny-player__timeline,
+[data-bunny-player-init][data-player-status="ready"][data-player-activated="false"] .bunny-player__timeline {
+  pointer-events: none;
+}
+[data-bunny-player-init] .bunny-player__timeline-handle {
+  transition: transform 0.15s ease-in-out;
+}
+[data-bunny-player-init][data-timeline-drag="true"] .bunny-player__timeline-handle {
+  transform: translate(-50%, -50%) scale(1);
+}
+[data-bunny-player-init][data-player-fullscreen="true"] .bunny-player__fullscreen-shrink-svg {
+  display: block;
+}
+[data-bunny-player-init][data-player-fullscreen="true"] .bunny-player__fullscreen-scale-svg {
+  display: none;
+}
+[data-bunny-player-init][data-player-muted="true"] .bunny-player__volume-mute-svg {
+  display: block;
+}
+[data-bunny-player-init][data-player-muted="true"] .bunny-player__volume-up-svg {
+  display: none;
+}
+[data-bunny-player-init][data-player-update-size="cover"] {
+  height: 100%;
+  top: 0;
+  left: 0;
+  position: absolute;
+}
+[data-bunny-player-init][data-player-update-size="cover"] [data-player-before] {
+  display: none;
+}
+[data-bunny-player-init][data-player-update-size="cover"][data-player-fullscreen="false"] .bunny-player__video {
+  object-fit: cover;
+}

@@ -8,7 +8,8 @@ Fichiers statiques (JS/CSS) servis en CDN via **jsDelivr** pour le site Webflow
   hero bg-zoom, stacking cards, **radial cards slider** (Osmo/GSAP Draggable), odometer,
   logo wall, panorama 3D réalisations, footer
   parallax, parallax image layers (hero Réalisation T07), mini showreel player (Flip, T07),
-  layered image slider (Observer/CustomEase, T07), panneau formulaire underlay,
+  layered image slider (Observer/CustomEase, T07), lecteur vidéo HLS Bunny (hls.js, T07),
+  panneau formulaire underlay,
   **validation formulaire live** Osmo) + le harnais
   Barba/Lenis/transitions de page. Chargé dans le **footer** Webflow.
 - `boreal-styles.css` — styles de ces modules. Chargé dans le **head** Webflow.
@@ -95,6 +96,18 @@ chargement des images et des polices ; `ScrollTrigger.refresh()` après layout (
 des instances de la page précédente). Remplace l'ancienne rangée de **cartes icônes** (grid statique
 Webflow, sans code custom — retirée dans le Designer) qu'Hugo jugeait « pas pro ». ⚠️ Rendu visible
 **uniquement sur l'URL publiée**.
+
+### Lecteur vidéo HLS (Bunny, Osmo advanced) — page Réalisation (T07)
+`initBunnyPlayer` : lecteur vidéo HLS custom sur `[data-bunny-player-init]` (+ `data-player-src="<url .m3u8>"`).
+Contrôles délégués `[data-player-control="playpause|mute|fullscreen"]`, timeline scrubbable, ratio auto
+(`data-player-update-size="true"`) ou plein cadre (`"cover"`), lazy (`data-player-lazy="true|meta"`).
+**Autoplay** : `data-player-autoplay="true"` → force muted + loop + `IntersectionObserver` (play quand visible,
+pause hors écran). Barba-safe : registre `_bunnyPlayers` → destroy (hls.js, IntersectionObserver, rAF,
+listeners globaux document/window) à chaque ré-init. CSS `.bunny-player__*` (Step 3 Osmo) dans `boreal-styles.css`.
+
+⚠️ **Requiert hls.js** chargé dans le **footer**, **avant** `boreal-app.js` :
+`<script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.11"></script>`
+(Safari lit le HLS nativement ; hls.js couvre Chrome/Firefox/Edge.)
 
 ### Formulaire underlay (soumission)
 - Panneau latéral persistant (`initFixedUnderlayNavigation`) ouvert par tout `[data-underlay-nav-toggle]`.
