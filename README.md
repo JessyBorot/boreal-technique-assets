@@ -97,6 +97,14 @@ des instances de la page précédente). Remplace l'ancienne rangée de **cartes 
 Webflow, sans code custom — retirée dans le Designer) qu'Hugo jugeait « pas pro ». ⚠️ Rendu visible
 **uniquement sur l'URL publiée**.
 
+### Apparition de texte au scroll (glisse horizontal, façon Netfolie Yokohama)
+`initTextApparition` : un élément avec `apparition="left"` entre depuis la gauche, `apparition="right"`
+depuis la droite, jusqu'à sa position initiale (`x:0`) + fondu. **Lié au scroll** (`scrub` : de `top bottom`
+à `center center`). Distance de départ en vw via l'attribut optionnel `apparition-distance` (défaut 40).
+Barba-safe (`gsap.context` reverté à chaque ré-init) ; désactivé en `prefers-reduced-motion`.
+⚠️ La section conteneur doit être en **`overflow: hidden`** (sinon `apparition="right"` peut créer un
+scroll horizontal). Attributs custom sans préfixe `data-` (voulu côté client).
+
 ### Lecteur vidéo HLS (Bunny, Osmo advanced) — page Réalisation (T07)
 `initBunnyPlayer` : lecteur vidéo HLS custom sur `[data-bunny-player-init]` (+ `data-player-src="<url .m3u8>"`).
 Contrôles délégués `[data-player-control="playpause|mute|fullscreen"]`, timeline scrubbable, ratio auto

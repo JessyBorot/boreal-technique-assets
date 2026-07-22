@@ -87,6 +87,7 @@ function runPageModulesOnce(container) {
     initButtonCharacterStagger,
     initGlobalParallax,        // parallax flexible Osmo ([data-parallax="trigger"])
     initContentRevealScroll,   // reveal on scroll Osmo ([data-reveal-group])
+    initTextApparition,        // apparition texte glisse horizontal au scroll ([apparition="left|right"])
     initSplitHeadings,
     initFlipOnScroll,        // hero home
     initBackgroundZoom,      // hero page service
@@ -2499,6 +2500,33 @@ function initMarqueeScrollDirection() {
     const scrollStart = marqueeDirectionAttr === -1 ? scrollSpeedAttr : -scrollSpeedAttr;
     const scrollEnd = -scrollStart;
     tl.fromTo(marqueeScroll, { x: `${scrollStart}vw` }, { x: `${scrollEnd}vw`, ease: "none" });
+  });
+}
+
+// ---- APPARITION TEXTE au scroll (glisse horizontal, façon Netfolie Yokohama) ----
+// [apparition="left"] entre depuis la gauche, [apparition="right"] depuis la droite, jusqu'à leur
+// position initiale (x:0). Lié au scroll (scrub). Distance de départ en vw via l'attribut optionnel
+// [apparition-distance] (défaut 40). Barba-safe via gsap.context (revert à chaque ré-init).
+// ⚠️ Pour éviter un scroll horizontal, la section qui contient ces éléments doit être en overflow:hidden.
+let _apparitionCtx;
+function initTextApparition() {
+  if (_apparitionCtx) _apparitionCtx.revert(); // nettoie l'init précédente (Barba)
+  if (reducedMotion) return;                    // reduced-motion : éléments laissés à leur place, visibles
+  _apparitionCtx = gsap.context(() => {
+    document.querySelectorAll("[apparition]").forEach((el) => {
+      const dir = (el.getAttribute("apparition") || "").toLowerCase();
+      if (dir !== "left" && dir !== "right") return;
+      const distAttr = parseFloat(el.getAttribute("apparition-distance"));
+      const dist = isNaN(distAttr) ? 40 : distAttr;
+      const fromX = (dir === "left" ? -dist : dist) + "vw";
+      gsap.fromTo(el,
+        { x: fromX, autoAlpha: 0 },
+        {
+          x: 0, autoAlpha: 1, ease: "none",
+          scrollTrigger: { trigger: el, start: "top bottom", end: "center center", scrub: true }
+        }
+      );
+    });
   });
 }
 
