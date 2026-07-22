@@ -1268,6 +1268,19 @@ function initRadialCardsSlider() {
         container.setAttribute("data-radial-slider-drag-status", "grab");
         render();
       },
+      // Clic (sans glissement) : le proxy capte les clics → on retrouve la carte réellement
+      // cliquée en ignorant le proxy le temps d'un elementFromPoint, puis on ouvre sa modale.
+      onClick: function () {
+        const pe = this.pointerEvent;
+        if (!pe) return;
+        proxy.style.pointerEvents = "none";
+        const under = document.elementFromPoint(pe.clientX, pe.clientY);
+        proxy.style.pointerEvents = "auto";
+        const item = under && under.closest("[data-radial-slider-item]");
+        if (!item) return;
+        const trig = item.matches("[data-modal-target]") ? item : item.querySelector("[data-modal-target]");
+        if (trig) openModalByName(trig.getAttribute("data-modal-target"));
+      },
       onPress: () => container.setAttribute("data-radial-slider-drag-status", "grabbing"),
       onDragStart: () => container.setAttribute("data-radial-slider-drag-status", "grabbing"),
       onRelease: () => container.setAttribute("data-radial-slider-drag-status", "grab")
@@ -1645,24 +1658,29 @@ function initPanoramaCarousel() {
 }
 
 // ---- MODALES (Osmo basic modal B) — pop-ups secteurs ----
-function initModalBasic() {
+// Ouvre une modale par son nom. Extrait comme helper car réutilisé par le slider radial
+// (dont le proxy de drag avale les clics → on ouvre la modale par code, pas via le listener DOM).
+function openModalByName(name) {
+  if (!name) return;
   const modalGroup = document.querySelector("[data-modal-group-status]");
-  const modals = document.querySelectorAll("[data-modal-name]");
+  document.querySelectorAll("[data-modal-target]").forEach((t) => t.setAttribute("data-modal-status", "not-active"));
+  document.querySelectorAll("[data-modal-name]").forEach((m) => m.setAttribute("data-modal-status", "not-active"));
+  const t = document.querySelector(`[data-modal-target="${name}"]`);
+  const m = document.querySelector(`[data-modal-name="${name}"]`);
+  if (t) t.setAttribute("data-modal-status", "active");
+  if (m) m.setAttribute("data-modal-status", "active");
+  if (modalGroup) modalGroup.setAttribute("data-modal-group-status", "active");
+  if (window.lenis) window.lenis.stop(); // fige le scroll derrière la modale
+}
+
+function initModalBasic() {
   const modalTargets = document.querySelectorAll("[data-modal-target]");
   if (!modalTargets.length) return;
 
   modalTargets.forEach((modalTarget) => {
     modalTarget.addEventListener("click", function (e) {
       e.preventDefault(); // évite le saut en haut si le déclencheur est un <a>
-      const name = this.getAttribute("data-modal-target");
-      modalTargets.forEach((t) => t.setAttribute("data-modal-status", "not-active"));
-      modals.forEach((m) => m.setAttribute("data-modal-status", "not-active"));
-      const t = document.querySelector(`[data-modal-target="${name}"]`);
-      const m = document.querySelector(`[data-modal-name="${name}"]`);
-      if (t) t.setAttribute("data-modal-status", "active");
-      if (m) m.setAttribute("data-modal-status", "active");
-      if (modalGroup) modalGroup.setAttribute("data-modal-group-status", "active");
-      if (window.lenis) window.lenis.stop(); // fige le scroll derrière la modale
+      openModalByName(this.getAttribute("data-modal-target"));
     });
   });
 

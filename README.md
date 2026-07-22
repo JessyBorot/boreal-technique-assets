@@ -50,8 +50,12 @@ tue le Draggable + retire le proxy à chaque ré-init. Ease `"radial"` créée a
 Géométrie via 2 variables CSS (`boreal-styles.css`) réglées pour le paysage : `--slider-rotate`
 (écart angulaire entre cartes) et `--slider-radius` (rayon, en % de la hauteur d'une carte).
 ⚠️ Rendu visible **uniquement sur l'URL publiée** → ajuster ces 2 valeurs à l'œil après publication.
-⚠️ Encore présent sur T02 sous forme de `depth-tiles` (`initDepthTiles`) — le retrait de l'ancien
-module n'aura lieu qu'une fois T02 migré vers le radial.
+
+**Pop-ups sur les cartes :** le calque de drag (proxy) capte les clics → un `data-modal-target`
+posé sur une carte ne recevrait jamais le clic. Le module câble donc `onClick` du Draggable :
+il retrouve la carte réellement cliquée (`elementFromPoint`, proxy ignoré le temps de la mesure)
+et ouvre sa modale via `openModalByName` (helper partagé avec `initModalBasic`). Poser
+`data-modal-target="<nom>"` sur la carte et `data-modal-name="<nom>"` sur la pop-up.
 
 ### Section Réalisations — panorama 3D (remplace le tornado, Userback #8034641)
 `initPanoramaCarousel` (remplace l'ancien `init3DCardsTornado`, retiré) : cylindre 3D façon
