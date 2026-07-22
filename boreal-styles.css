@@ -369,6 +369,7 @@
 [data-masonry-list] {
   --masonry-col: 4;
   --masonry-gap: 1em;
+  width: 100%;
 }
 @media screen and (max-width: 991px) {
   [data-masonry-list] { --masonry-col: 3; --masonry-gap: 1em; }
@@ -376,3 +377,9 @@
 @media screen and (max-width: 767px) {
   [data-masonry-list] { --masonry-col: 2; --masonry-gap: 0.5em; }
 }
+/* ⚠️ FIX largeur (sinon grille « vide ») : le JS passe les items en position:absolute → le container
+   n'a plus rien en flux et sa chaîne parente (.masonry-wrap est un flex-item SANS grow dans une section
+   flex) s'effondre en largeur → les items calculés en calc(100%…) tombent à 0. On force la chaîne à
+   prendre la pleine largeur. !important car Webflow impose flex:0 1 auto sur ces classes. */
+.masonry-wrap { flex: 1 1 auto !important; min-width: 0 !important; width: 100% !important; }
+.masonry-collection { width: 100% !important; }
