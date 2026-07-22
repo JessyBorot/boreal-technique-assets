@@ -5,7 +5,7 @@ Fichiers statiques (JS/CSS) servis en CDN via **jsDelivr** pour le site Webflow
 
 ## Fichiers
 - `boreal-app.js` — tous les modules (nav, curseur, parallax, split titres, hero Flip,
-  hero bg-zoom, stacking cards, depth tiles, **radial cards slider** (Osmo/GSAP Draggable), odometer,
+  hero bg-zoom, stacking cards, **radial cards slider** (Osmo/GSAP Draggable), odometer,
   logo wall, panorama 3D réalisations, footer
   parallax, parallax image layers (hero Réalisation T07), mini showreel player (Flip, T07),
   layered image slider (Observer/CustomEase, T07), panneau formulaire underlay,

@@ -93,7 +93,6 @@ function runPageModulesOnce(container) {
     initParallaxLayers,      // hero page réalisation (T07) — parallax image layers Osmo
     initLayeredImageSlider,  // slider images superposées (Osmo) — T07
     initStackingStickyCardsBounce,
-    initDepthTiles,          // ancien composant « secteurs » — encore utilisé par T02 (à retirer une fois T02 migré vers le radial)
     initRadialCardsSlider,   // slider radial (Osmo, GSAP Draggable) — nouvelle section « types d'événements »
     initMasonryGrid,         // grid masonry (Osmo) — section « spécialisations » T02 (remplace les cartes icônes)
     initModalBasic,          // pop-ups (Osmo modal B) — secteurs T02
@@ -880,79 +879,6 @@ function initStackingStickyCardsBounce() {
       .to(targetEl, { scaleX: targetScaleX, scaleY: targetScaleY, duration: 0.1, ease: "power1.out" })
       .to(targetEl, { scaleX: 1, scaleY: 1, duration: 1, ease: "elastic.out(1, 0.3)" });
   }
-}
-
-// ---- DEPTH TILES (secteurs) ----
-function initDepthTiles() {
-  document.querySelectorAll("[data-depth-tiles-init]").forEach((container) => {
-    const list = container.querySelector("[data-depth-tiles-list]");
-    const tiles = container.querySelectorAll("[data-depth-tiles-item]");
-    const tileCount = tiles.length;
-    if (tileCount < 2) return;
-
-    const xMultiplier = 0.65, backScale = 0.5, backOpacity = 1, backDarkness = 1, sideRotateY = 5, perspective = 75;
-    const moveDuration = 1.5, startDelay = 0.5, pauseDuration = 0.125;
-    const state = { progress: 0 };
-    let isActive = false, isHovering = false, hasStarted = false, stepTimeline, delayedCall, startDelayedCall, activeTileIndex = -1;
-
-    gsap.set(list, { perspective: `${perspective}em` });
-    gsap.set(tiles, { transformStyle: "preserve-3d", transformPerspective: perspective * 16 });
-
-    function getRelativeIndex(index) {
-      let relative = index - state.progress;
-      relative = ((relative + tileCount / 2) % tileCount + tileCount) % tileCount - tileCount / 2;
-      return gsap.utils.clamp(-2, 2, relative);
-    }
-    function getActiveIndex() { return ((Math.round(state.progress) % tileCount) + tileCount) % tileCount; }
-    function updateTileStatus() {
-      const currentActiveIndex = getActiveIndex();
-      if (currentActiveIndex === activeTileIndex) return;
-      activeTileIndex = currentActiveIndex;
-      tiles.forEach((tile, index) => tile.setAttribute("data-depth-tiles-item-status", index === activeTileIndex ? "active" : "not-active"));
-    }
-    function renderDepth() {
-      const tileWidth = tiles[0].offsetWidth;
-      const radiusX = tileWidth * xMultiplier;
-      updateTileStatus();
-      tiles.forEach((tile, index) => {
-        const relative = getRelativeIndex(index);
-        const angle = (relative / 2) * Math.PI;
-        const orbitX = Math.sin(angle) * radiusX;
-        const orbitDepth = (Math.cos(angle) + 1) / 2;
-        const x = relative <= -2 || relative >= 2 ? 0 : orbitX;
-        const scale = gsap.utils.interpolate(backScale, 1, orbitDepth);
-        const opacity = gsap.utils.interpolate(backOpacity, 1, orbitDepth);
-        const brightness = gsap.utils.interpolate(backDarkness, 1, orbitDepth);
-        const rotateY = Math.sin(angle) * -sideRotateY;
-        const zIndex = Math.round(gsap.utils.interpolate(1, 1000, orbitDepth));
-        gsap.set(tile, { x, scale, opacity, rotateY, filter: `brightness(${brightness})`, zIndex });
-      });
-    }
-    function goToNextTile() {
-      if (!isActive || isHovering) return;
-      stepTimeline = gsap.timeline({ paused: true, onComplete: () => { if (isActive && !isHovering) delayedCall = gsap.delayedCall(pauseDuration, goToNextTile); } });
-      stepTimeline.to(state, { progress: state.progress + 1, duration: moveDuration, ease: "depth", onUpdate: renderDepth });
-      stepTimeline.play();
-    }
-    function pauseDepth() { isActive = false; if (stepTimeline) stepTimeline.pause(); if (delayedCall) delayedCall.pause(); if (startDelayedCall) startDelayedCall.pause(); }
-    function playDepth() {
-      isActive = true;
-      if (isHovering) return;
-      if (!hasStarted) { hasStarted = true; startDelayedCall = gsap.delayedCall(startDelay, goToNextTile); return; }
-      if (stepTimeline && stepTimeline.progress() < 1) stepTimeline.play(); else goToNextTile();
-    }
-    function handleHoverStart() { isHovering = true; if (delayedCall) delayedCall.pause(); if (startDelayedCall) startDelayedCall.pause(); }
-    function handleHoverEnd() {
-      isHovering = false;
-      if (!isActive) return;
-      if (!hasStarted) { playDepth(); return; }
-      if (stepTimeline && stepTimeline.progress() < 1) stepTimeline.play(); else goToNextTile();
-    }
-    list.addEventListener("pointerover", (event) => { if (!event.target.closest("[data-depth-tiles-item]")) return; handleHoverStart(); });
-    list.addEventListener("pointerleave", () => handleHoverEnd());
-    renderDepth();
-    ScrollTrigger.create({ trigger: container, start: "top bottom", end: "bottom top", onToggle: (self) => (self.isActive ? playDepth() : pauseDepth()) });
-  });
 }
 
 // ---- RADIAL CARDS SLIDER (Osmo, GSAP Draggable/Inertia) — section « types d'événements »/secteurs ----

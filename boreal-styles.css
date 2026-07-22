@@ -74,13 +74,6 @@
 .cards-stack-card { position: relative; }
 
 
-/* ===== DEPTH TILES (secteurs) ===== */
-[data-depth-tiles-item] .demo-card { transition: transform 0.4s cubic-bezier(0.35, 1.5, 0.6, 1); transform: scale(1) rotate(0.001deg); }
-[data-depth-tiles-item]:hover .demo-card { transform: scale(0.95) rotate(0.001deg); }
-:is(.wf-design-mode, .wf-editor) .depth-tiles__collection { overflow: scroll; }
-:is(.wf-design-mode, .wf-editor) .depth-tiles__list { display: flex; max-width: 100vw; }
-
-
 /* ===== ODOMETER ===== */
 [data-odometer-element] { display: inline-flex; align-items: center; font-variant-numeric: tabular-nums; }
 [data-odometer-part="mask"], [data-odometer-part="static"] { display: inline-block; overflow: clip; padding: 0.05em; margin: -0.05em; }
