@@ -216,8 +216,9 @@ function closeNav() {
 function closeModals() {
   document.querySelectorAll("[data-modal-target]").forEach((t) => t.setAttribute("data-modal-status", "not-active"));
   document.querySelectorAll("[data-modal-name]").forEach((m) => m.setAttribute("data-modal-status", "not-active"));
-  const g = document.querySelector("[data-modal-group-status]");
-  if (g) g.setAttribute("data-modal-group-status", "not-active");
+  // ⚠️ Plusieurs groupes modaux peuvent coexister (ex. T02 : un groupe radial + un groupe masonry)
+  //    → tous les fermer, pas seulement le premier.
+  document.querySelectorAll("[data-modal-group-status]").forEach((g) => g.setAttribute("data-modal-group-status", "not-active"));
   if (window.lenis) window.lenis.start(); // relance le scroll
 }
 
@@ -1662,14 +1663,20 @@ function initPanoramaCarousel() {
 // (dont le proxy de drag avale les clics → on ouvre la modale par code, pas via le listener DOM).
 function openModalByName(name) {
   if (!name) return;
-  const modalGroup = document.querySelector("[data-modal-group-status]");
   document.querySelectorAll("[data-modal-target]").forEach((t) => t.setAttribute("data-modal-status", "not-active"));
   document.querySelectorAll("[data-modal-name]").forEach((m) => m.setAttribute("data-modal-status", "not-active"));
+  // ⚠️ Plusieurs groupes modaux peuvent coexister (T02 : groupe radial + groupe masonry). On active
+  //    le groupe qui CONTIENT la modale ouverte (pas le premier du document), sinon la carte reste
+  //    masquée par son groupe parent resté « not-active ».
+  document.querySelectorAll("[data-modal-group-status]").forEach((g) => g.setAttribute("data-modal-group-status", "not-active"));
   const t = document.querySelector(`[data-modal-target="${name}"]`);
   const m = document.querySelector(`[data-modal-name="${name}"]`);
   if (t) t.setAttribute("data-modal-status", "active");
-  if (m) m.setAttribute("data-modal-status", "active");
-  if (modalGroup) modalGroup.setAttribute("data-modal-group-status", "active");
+  if (m) {
+    m.setAttribute("data-modal-status", "active");
+    const g = m.closest("[data-modal-group-status]");
+    if (g) g.setAttribute("data-modal-group-status", "active");
+  }
   if (window.lenis) window.lenis.stop(); // fige le scroll derrière la modale
 }
 
