@@ -87,7 +87,8 @@ function runPageModulesOnce(container) {
     initButtonCharacterStagger,
     initGlobalParallax,        // parallax flexible Osmo ([data-parallax="trigger"])
     initContentRevealScroll,   // reveal on scroll Osmo ([data-reveal-group])
-    initTextApparition,        // apparition texte glisse horizontal au scroll ([apparition="left|right"])
+    initTextApparition,        // apparition au scroll : glisse horizontale ou zoom ([apparition="left|right|zoom"])
+    initTimelineProgress,      // remplissage bleu de la ligne timeline au scroll (.timeline9_line — page À Propos)
     initSplitHeadings,
     initFlipOnScroll,        // hero home
     initBackgroundZoom,      // hero page service
@@ -2503,11 +2504,13 @@ function initMarqueeScrollDirection() {
   });
 }
 
-// ---- APPARITION TEXTE au scroll (glisse horizontal, façon Netfolie Yokohama) ----
+// ---- APPARITION au scroll (glisse horizontale ou zoom) ----
 // [apparition="left"] entre depuis la gauche, [apparition="right"] depuis la droite, jusqu'à leur
-// position initiale (x:0). Lié au scroll (scrub). Distance de départ en vw via l'attribut optionnel
-// [apparition-distance] (défaut 40). Barba-safe via gsap.context (revert à chaque ré-init).
-// ⚠️ Pour éviter un scroll horizontal, la section qui contient ces éléments doit être en overflow:hidden.
+// position initiale (x:0). [apparition="zoom"] grossit depuis une échelle réduite jusqu'à 1 (effet
+// d'apparition façon RestoAmir, utilisé sur les .timeline9_item de la page À Propos).
+// Tout est lié au scroll (scrub). Distance de départ en vw via [apparition-distance] (défaut 40),
+// échelle de départ du zoom via [apparition-scale] (défaut 0.8). Barba-safe via gsap.context.
+// ⚠️ Pour éviter un scroll horizontal, la section qui contient un left/right doit être en overflow:hidden.
 let _apparitionCtx;
 function initTextApparition() {
   if (_apparitionCtx) _apparitionCtx.revert(); // nettoie l'init précédente (Barba)
@@ -2515,15 +2518,57 @@ function initTextApparition() {
   _apparitionCtx = gsap.context(() => {
     document.querySelectorAll("[apparition]").forEach((el) => {
       const dir = (el.getAttribute("apparition") || "").toLowerCase();
-      if (dir !== "left" && dir !== "right") return;
-      const distAttr = parseFloat(el.getAttribute("apparition-distance"));
-      const dist = isNaN(distAttr) ? 40 : distAttr;
-      const fromX = (dir === "left" ? -dist : dist) + "vw";
-      gsap.fromTo(el,
-        { x: fromX, autoAlpha: 0 },
+      const trig = { trigger: el, start: "top bottom", end: "center center", scrub: true };
+
+      if (dir === "left" || dir === "right") {
+        const distAttr = parseFloat(el.getAttribute("apparition-distance"));
+        const dist = isNaN(distAttr) ? 40 : distAttr;
+        const fromX = (dir === "left" ? -dist : dist) + "vw";
+        gsap.fromTo(el,
+          { x: fromX, autoAlpha: 0 },
+          { x: 0, autoAlpha: 1, ease: "none", scrollTrigger: trig }
+        );
+      } else if (dir === "zoom") {
+        const scaleAttr = parseFloat(el.getAttribute("apparition-scale"));
+        const fromScale = isNaN(scaleAttr) ? 0.8 : scaleAttr;
+        gsap.fromTo(el,
+          { scale: fromScale, autoAlpha: 0, transformOrigin: "center center" },
+          { scale: 1, autoAlpha: 1, ease: "none", scrollTrigger: trig }
+        );
+      }
+    });
+  });
+}
+
+// ---- TIMELINE PROGRESS (remplissage de la ligne au scroll) ----
+// Remplit la .timeline9_line (Relume) d'un dégradé bleu (dodger-blue) qui grandit du haut vers le
+// bas en suivant le scroll — la barre injectée [data-timeline-fill] se fait scaler en Y (scrub) sur
+// la durée de traversée de .timeline9_progress. Non destructif : la barre de remplissage est créée
+// en JS par-dessus la ligne sombre existante. Barba-safe via gsap.context.
+let _timelineCtx;
+function initTimelineProgress() {
+  if (_timelineCtx) _timelineCtx.revert();
+  const BLUE = "var(--_primitives---colors--dodger-blue)";
+  _timelineCtx = gsap.context(() => {
+    document.querySelectorAll(".timeline9_progress").forEach((progress) => {
+      const line = progress.querySelector(".timeline9_line");
+      if (!line) return;
+      line.style.position = "relative";
+      line.style.overflow = "hidden";
+      let fill = line.querySelector("[data-timeline-fill]");
+      if (!fill) {
+        fill = document.createElement("div");
+        fill.setAttribute("data-timeline-fill", "");
+        fill.style.cssText =
+          "position:absolute;inset:0;pointer-events:none;background:" + BLUE + ";";
+        line.appendChild(fill);
+      }
+      if (reducedMotion) { gsap.set(fill, { scaleY: 1 }); return; }
+      gsap.fromTo(fill,
+        { scaleY: 0, transformOrigin: "center top" },
         {
-          x: 0, autoAlpha: 1, ease: "none",
-          scrollTrigger: { trigger: el, start: "top bottom", end: "center center", scrub: true }
+          scaleY: 1, ease: "none",
+          scrollTrigger: { trigger: progress, start: "top center", end: "bottom center", scrub: true }
         }
       );
     });

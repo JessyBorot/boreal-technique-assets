@@ -97,13 +97,22 @@ des instances de la page précédente). Remplace l'ancienne rangée de **cartes 
 Webflow, sans code custom — retirée dans le Designer) qu'Hugo jugeait « pas pro ». ⚠️ Rendu visible
 **uniquement sur l'URL publiée**.
 
-### Apparition de texte au scroll (glisse horizontal, façon Netfolie Yokohama)
+### Apparition au scroll (glisse horizontale ou zoom)
 `initTextApparition` : un élément avec `apparition="left"` entre depuis la gauche, `apparition="right"`
-depuis la droite, jusqu'à sa position initiale (`x:0`) + fondu. **Lié au scroll** (`scrub` : de `top bottom`
-à `center center`). Distance de départ en vw via l'attribut optionnel `apparition-distance` (défaut 40).
-Barba-safe (`gsap.context` reverté à chaque ré-init) ; désactivé en `prefers-reduced-motion`.
-⚠️ La section conteneur doit être en **`overflow: hidden`** (sinon `apparition="right"` peut créer un
-scroll horizontal). Attributs custom sans préfixe `data-` (voulu côté client).
+depuis la droite, jusqu'à sa position initiale (`x:0`) + fondu. `apparition="zoom"` grossit depuis une
+échelle réduite jusqu'à `1` + fondu (effet d'apparition façon RestoAmir, utilisé sur les
+`.timeline9_item` de la page À Propos). **Lié au scroll** (`scrub` : de `top bottom` à `center center`).
+Distance de départ en vw via `apparition-distance` (défaut 40, left/right) ; échelle de départ du zoom
+via `apparition-scale` (défaut 0.8). Barba-safe (`gsap.context` reverté à chaque ré-init) ; désactivé
+en `prefers-reduced-motion`. ⚠️ La section conteneur d'un left/right doit être en **`overflow: hidden`**
+(sinon `apparition="right"` peut créer un scroll horizontal). Attributs custom sans préfixe `data-` (voulu côté client).
+
+### Remplissage de la ligne timeline au scroll (page À Propos)
+`initTimelineProgress` : remplit la `.timeline9_line` (Relume) d'un bleu `var(--_primitives---colors--dodger-blue)`
+qui grandit du haut vers le bas en suivant le scroll. Non destructif : une barre `[data-timeline-fill]`
+est injectée en JS par-dessus la ligne sombre existante, puis scalée en Y (`scrub`, de `top center` à
+`bottom center` sur `.timeline9_progress`). Barba-safe (`gsap.context`) ; en `prefers-reduced-motion`
+la ligne est laissée pleine (bleu statique).
 
 ### Lecteur vidéo HLS (Bunny, Osmo advanced) — page Réalisation (T07)
 `initBunnyPlayer` : lecteur vidéo HLS custom sur `[data-bunny-player-init]` (+ `data-player-src="<url .m3u8>"`).
