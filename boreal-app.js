@@ -91,6 +91,7 @@ function runPageModulesOnce(container) {
     initTimelineProgress,      // remplissage bleu de la ligne timeline au scroll (.timeline9_line — page À Propos)
     initGradientWaveText,      // titres révélés en vague de couleur au scroll ([data-gradient-wave-text] — Osmo)
     init3dImageCarousel,       // carrousel cylindrique 3D drag/scroll ([data-3d-carousel-wrap] — Osmo, page À Propos)
+    initMultiFilter,           // filtre multi-match CMS ([data-filter-group] — Osmo, page Réalisations T06)
     initSplitHeadings,
     initFlipOnScroll,        // hero home
     initBackgroundZoom,      // hero page service
@@ -2657,6 +2658,125 @@ function initGradientWaveText() {
       }
     });
     _gradientWaveSplits.push(split);
+  });
+}
+
+// ---- FILTRE MULTI-MATCH (Osmo) — page Réalisations (T06) ----
+// Chaque [data-filter-group] pilote des boutons [data-filter-target] et des items [data-filter-name]
+// (ou tags collectés via [data-filter-name-collect] sur des enfants). Modes single/multi via
+// data-filter-target-match (sélection) et data-filter-name-match (AND/OR). Le module ne fait que poser
+// data-filter-status (active | not-active | transition-out) + aria — toute l'anim est en CSS.
+// Barba-safe : le listener vit sur le groupe (dans le container remplacé par Barba) ; garde anti-double-bind.
+function initMultiFilter() {
+  const transitionDelay = 300;
+  document.querySelectorAll("[data-filter-group]").forEach((group) => {
+    if (group.dataset.filterBound === "1") return; // déjà initialisé (évite un double-bind)
+    group.dataset.filterBound = "1";
+
+    const targetMatch = (group.getAttribute("data-filter-target-match") || "multi").trim().toLowerCase();
+    const nameMatch = (group.getAttribute("data-filter-name-match") || "multi").trim().toLowerCase();
+
+    const buttons = [...group.querySelectorAll("[data-filter-target]")];
+    const items = [...group.querySelectorAll("[data-filter-name]")];
+
+    // Collecte des tokens depuis les enfants [data-filter-name-collect] si présents
+    items.forEach((item) => {
+      const collectors = item.querySelectorAll("[data-filter-name-collect]");
+      if (!collectors.length) return;
+      const seen = new Set(), tokens = [];
+      collectors.forEach((c) => {
+        const v = (c.getAttribute("data-filter-name-collect") || "").trim().toLowerCase();
+        if (v && !seen.has(v)) { seen.add(v); tokens.push(v); }
+      });
+      if (tokens.length) item.setAttribute("data-filter-name", tokens.join(" "));
+    });
+
+    const itemTokens = new Map();
+    items.forEach((el) => {
+      const raw = (el.getAttribute("data-filter-name") || "").trim().toLowerCase();
+      itemTokens.set(el, new Set(raw ? raw.split(/\s+/).filter(Boolean) : []));
+    });
+
+    const setItemState = (el, on) => {
+      const next = on ? "active" : "not-active";
+      if (el.getAttribute("data-filter-status") !== next) {
+        el.setAttribute("data-filter-status", next);
+        el.setAttribute("aria-hidden", on ? "false" : "true");
+      }
+    };
+    const setButtonState = (btn, on) => {
+      const next = on ? "active" : "not-active";
+      if (btn.getAttribute("data-filter-status") !== next) {
+        btn.setAttribute("data-filter-status", next);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      }
+    };
+
+    let activeTags = targetMatch === "single" ? null : new Set(["all"]);
+    const hasRealActive = () => {
+      if (targetMatch === "single") return activeTags !== null;
+      return activeTags.size > 0 && !activeTags.has("all");
+    };
+    const resetAll = () => {
+      if (targetMatch === "single") activeTags = null;
+      else { activeTags.clear(); activeTags.add("all"); }
+    };
+
+    const itemMatches = (el) => {
+      if (!hasRealActive()) return true;
+      const tokens = itemTokens.get(el);
+      if (targetMatch === "single") return tokens.has(activeTags);
+      const selected = [...activeTags];
+      if (nameMatch === "single") { // AND
+        for (let i = 0; i < selected.length; i++) if (!tokens.has(selected[i])) return false;
+        return true;
+      }
+      for (let i = 0; i < selected.length; i++) if (tokens.has(selected[i])) return true; // OR
+      return false;
+    };
+
+    const paint = (rawTarget) => {
+      const target = (rawTarget || "").trim().toLowerCase();
+      if ((target === "all" || target === "reset") && !hasRealActive()) return;
+      if (target === "all" || target === "reset") resetAll();
+      else if (targetMatch === "single") activeTags = target;
+      else {
+        if (activeTags.has("all")) activeTags.delete("all");
+        if (activeTags.has(target)) activeTags.delete(target);
+        else activeTags.add(target);
+        if (activeTags.size === 0) resetAll();
+      }
+
+      items.forEach((el) => {
+        if (el._ft) clearTimeout(el._ft);
+        const next = itemMatches(el);
+        const cur = el.getAttribute("data-filter-status");
+        if (cur === "active" && transitionDelay > 0) {
+          el.setAttribute("data-filter-status", "transition-out");
+          el._ft = setTimeout(() => { setItemState(el, next); el._ft = null; }, transitionDelay);
+        } else if (transitionDelay > 0) {
+          el._ft = setTimeout(() => { setItemState(el, next); el._ft = null; }, transitionDelay);
+        } else {
+          setItemState(el, next);
+        }
+      });
+
+      buttons.forEach((btn) => {
+        const t = (btn.getAttribute("data-filter-target") || "").trim().toLowerCase();
+        let on = false;
+        if (t === "all") on = !hasRealActive();
+        else if (t === "reset") on = hasRealActive();
+        else on = targetMatch === "single" ? activeTags === t : activeTags.has(t);
+        setButtonState(btn, on);
+      });
+    };
+
+    group.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-filter-target]");
+      if (btn && group.contains(btn)) paint(btn.getAttribute("data-filter-target"));
+    });
+
+    paint("all");
   });
 }
 

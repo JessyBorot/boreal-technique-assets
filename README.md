@@ -124,6 +124,17 @@ Requiert **SplitText** (chargé + registré dans le head). Barba-safe : registre
 chaque ré-init (le revert du SplitText tue aussi le contexte GSAP + ScrollTrigger). Désactivé en
 `prefers-reduced-motion` (titre laissé à sa couleur de repos). Utilisé sur les titres Mission / Vision (À Propos).
 
+### Filtre multi-match (Osmo) — page Réalisations (T06)
+`initMultiFilter` : chaque `[data-filter-group]` pilote des boutons `[data-filter-target]` (valeurs `all`,
+`reset`, ou un tag) et des items `[data-filter-name]` (tokens séparés par espace ; ou collectés depuis des
+enfants `[data-filter-name-collect]`). Modes via `data-filter-target-match` (`single`/`multi`) et
+`data-filter-name-match` (`multi`=OR, `single`=AND). Le JS ne pose que `data-filter-status`
+(`active`/`not-active`/`transition-out`) + attributs aria ; **toute l'animation est en CSS** (`boreal-styles.css`).
+Barba-safe : listener sur le groupe (dans le container remplacé par Barba) + garde `data-filter-bound`.
+⚠️ **État actif du bouton adapté** : l'original Osmo (`background:#131313`) est invisible sur le fond sombre du
+site → remplacé par l'accent **bleu** (`--_primitives---colors--dodger-blue`, texte sombre). ⚠️ Le filtrage
+ne fait effet que si les items portent un `data-filter-name` (à binder sur la catégorie CMS côté Webflow).
+
 ### 3D Image Carousel (Osmo) — page À Propos
 `init3dImageCarousel` : cylindre 3D de panneaux `[data-3d-carousel-panel]` dans `[data-3d-carousel-wrap]`
 (chaque panneau contient un/des `[data-3d-carousel-content]`). Rotation auto infinie, **drag** (Draggable +
