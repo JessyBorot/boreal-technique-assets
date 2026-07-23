@@ -463,3 +463,14 @@
 [data-bunny-player-init][data-player-update-size="cover"][data-player-fullscreen="false"] .bunny-player__video {
   object-fit: cover;
 }
+
+/* ============================================================
+   3D IMAGE CAROUSEL (Osmo) — page À Propos
+   Le module JS (init3dImageCarousel) positionne les panneaux en cylindre 3D.
+   NB : le bloc .wf-design-mode {…} du snippet Osmo n'a PAS sa place ici — il ne
+   s'applique que dans le canvas du Designer (où ce CSS CDN n'est pas chargé). À
+   coller dans un Embed / Custom Code de page Webflow si besoin d'éditer au Designer.
+   ============================================================ */
+.img-carousel__panel:nth-of-type(even) {
+  justify-content: center;
+}

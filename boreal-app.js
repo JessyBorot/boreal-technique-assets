@@ -90,6 +90,7 @@ function runPageModulesOnce(container) {
     initTextApparition,        // apparition au scroll : glisse horizontale ou zoom ([apparition="left|right|zoom"])
     initTimelineProgress,      // remplissage bleu de la ligne timeline au scroll (.timeline9_line — page À Propos)
     initGradientWaveText,      // titres révélés en vague de couleur au scroll ([data-gradient-wave-text] — Osmo)
+    init3dImageCarousel,       // carrousel cylindrique 3D drag/scroll ([data-3d-carousel-wrap] — Osmo, page À Propos)
     initSplitHeadings,
     initFlipOnScroll,        // hero home
     initBackgroundZoom,      // hero page service
@@ -2657,6 +2658,117 @@ function initGradientWaveText() {
     });
     _gradientWaveSplits.push(split);
   });
+}
+
+// ---- 3D IMAGE CAROUSEL (Osmo) ----
+// Cylindre 3D de panneaux [data-3d-carousel-panel] dans [data-3d-carousel-wrap] : rotation auto
+// infinie, drag (Draggable + inertie), impulsion à la molette (Observer), et intro au scroll.
+// ⚠️ Adaptations vs snippet Osmo : (1) le nettoyage NE fait PAS ScrollTrigger.getAll().kill()
+// (tuerait les autres modules) — on kill uniquement les instances de CE carrousel ; (2) le listener
+// resize est mémorisé et retiré à la ré-init (Barba) ; (3) Draggable/Observer/GSAP déjà registrés (head).
+// Requiert Draggable + InertiaPlugin + Observer (chargés dans le head).
+let _carousel3d = null;
+function init3dImageCarousel() {
+  // Nettoyage d'une init précédente (Barba / ré-appel)
+  if (_carousel3d) { try { _carousel3d.teardown(); } catch (_) {} _carousel3d = null; }
+
+  const wrap = document.querySelector("[data-3d-carousel-wrap]");
+  if (!wrap) return;
+  if (!window.Draggable || !window.Observer) return; // plugins manquants → on abandonne proprement
+
+  let radius, draggableInstance, observerInstance, spin, intro;
+  let lastWidth = window.innerWidth;
+
+  const calcRadius = () => { radius = window.innerWidth * 0.5; };
+
+  const destroy = () => {
+    draggableInstance && draggableInstance.kill();
+    observerInstance && observerInstance.kill();
+    spin && spin.kill();
+    if (intro) { intro.scrollTrigger && intro.scrollTrigger.kill(); intro.kill(); } // scopé : pas de getAll().kill()
+    const panels = wrap.querySelectorAll("[data-3d-carousel-panel]");
+    gsap.set(panels, { clearProps: "transform" });
+  };
+
+  const create = () => {
+    calcRadius();
+    const panels = wrap.querySelectorAll("[data-3d-carousel-panel]");
+    const content = wrap.querySelectorAll("[data-3d-carousel-content]");
+    const proxy = document.createElement("div");
+    const wrapProgress = gsap.utils.wrap(0, 1);
+    const dragDistance = window.innerWidth * 3;
+    let startProg;
+
+    panels.forEach((p) => { p.style.transformOrigin = `50% 50% ${-radius}px`; });
+
+    spin = gsap.fromTo(panels,
+      { rotationY: (i) => (i * 360) / panels.length },
+      { rotationY: "-=360", duration: 30, ease: "none", repeat: -1 }
+    );
+    spin.progress(1000); // buffer pour le scroll-back
+
+    // Respect de prefers-reduced-motion : pas de rotation auto, pas d'intro, pas d'impulsion molette.
+    // On laisse le drag disponible (interaction volontaire) et un état de repos figé.
+    if (reducedMotion) {
+      spin.timeScale(0);
+      gsap.set(wrap, { scale: 1, rotation: 5 });
+      gsap.set(content, { autoAlpha: 1 });
+    } else {
+      intro = gsap.timeline({
+        scrollTrigger: { trigger: wrap, start: "top 80%", end: "bottom top", scrub: false, toggleActions: "play resume play play" },
+        defaults: { ease: "expo.inOut" }
+      });
+      intro
+        .fromTo(spin, { timeScale: 15 }, { timeScale: 1, duration: 2 })
+        .fromTo(wrap, { scale: 0.5, rotation: 12 }, { scale: 1, rotation: 5, duration: 1.2 }, "<")
+        .fromTo(content, { autoAlpha: 0 }, { autoAlpha: 1, stagger: { amount: 0.8, from: "random" } }, "<");
+
+      observerInstance = Observer.create({
+        target: window, type: "wheel,scroll,touch",
+        onChangeY: (self) => {
+          let v = gsap.utils.clamp(-60, 60, self.velocityY * 0.005);
+          spin.timeScale(v);
+          const resting = v < 0 ? -1 : 1;
+          gsap.fromTo({ value: v }, { value: v }, {
+            value: resting, duration: 1.2,
+            onUpdate() { spin.timeScale(this.targets()[0].value); }
+          });
+        }
+      });
+    }
+
+    draggableInstance = Draggable.create(proxy, {
+      trigger: wrap, type: "x", inertia: true, allowNativeTouchScrolling: true,
+      onPress() {
+        gsap.to(content, { clipPath: "inset(5%)", duration: 0.3, ease: "power4.out", overwrite: "auto" });
+        gsap.killTweensOf(spin);
+        spin.timeScale(0);
+        startProg = spin.progress();
+      },
+      onDrag() { spin.progress(wrapProgress(startProg + (this.startX - this.x) / dragDistance)); },
+      onThrowUpdate() { spin.progress(wrapProgress(startProg + (this.startX - this.x) / dragDistance)); },
+      onRelease() {
+        if (!reducedMotion && (!this.tween || !this.tween.isActive())) gsap.to(spin, { timeScale: 1, duration: 0.1 });
+        gsap.to(content, { clipPath: "inset(0%)", duration: 0.5, ease: "power4.out", overwrite: "auto" });
+      },
+      onThrowComplete() { if (!reducedMotion) gsap.to(spin, { timeScale: 1, duration: 0.1 }); }
+    })[0];
+  };
+
+  create();
+
+  let rt;
+  const onResize = () => {
+    clearTimeout(rt);
+    rt = setTimeout(() => {
+      const newWidth = window.innerWidth;
+      if (newWidth !== lastWidth) { lastWidth = newWidth; destroy(); create(); ScrollTrigger.refresh(); }
+    }, 200);
+  };
+  window.addEventListener("resize", onResize);
+
+  // Handle de nettoyage complet pour la ré-init Barba
+  _carousel3d = { teardown() { window.removeEventListener("resize", onResize); clearTimeout(rt); destroy(); } };
 }
 
 // ---- FOOTER PARALLAX ----

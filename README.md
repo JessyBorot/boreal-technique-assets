@@ -124,6 +124,18 @@ Requiert **SplitText** (chargé + registré dans le head). Barba-safe : registre
 chaque ré-init (le revert du SplitText tue aussi le contexte GSAP + ScrollTrigger). Désactivé en
 `prefers-reduced-motion` (titre laissé à sa couleur de repos). Utilisé sur les titres Mission / Vision (À Propos).
 
+### 3D Image Carousel (Osmo) — page À Propos
+`init3dImageCarousel` : cylindre 3D de panneaux `[data-3d-carousel-panel]` dans `[data-3d-carousel-wrap]`
+(chaque panneau contient un/des `[data-3d-carousel-content]`). Rotation auto infinie, **drag** (Draggable +
+InertiaPlugin), **impulsion à la molette** (Observer), et intro au scroll (scale/rotation/fade aléatoire).
+Requiert Draggable + InertiaPlugin + Observer (chargés dans le head). CSS : `.img-carousel__panel:nth-of-type(even){justify-content:center}`
+dans `boreal-styles.css`. ⚠️ **Écarts vs snippet Osmo brut** (importants dans notre contexte multi-modules /
+Barba) : (1) le nettoyage NE fait PAS `ScrollTrigger.getAll().kill()` — il tuerait les autres modules ; on ne
+kill que les instances de CE carrousel (`intro.scrollTrigger` inclus) ; (2) le listener `resize` est mémorisé
+et retiré à la ré-init via le handle `_carousel3d.teardown()` ; (3) `prefers-reduced-motion` : pas de spin auto
+ni d'intro ni d'impulsion molette (état de repos figé), le **drag reste dispo**. Le bloc `.wf-design-mode{…}`
+du snippet Osmo n'est PAS dans le CDN (Designer-only) — à coller dans un Embed Webflow si édition au Designer.
+
 ### Lecteur vidéo HLS (Bunny, Osmo advanced) — page Réalisation (T07)
 `initBunnyPlayer` : lecteur vidéo HLS custom sur `[data-bunny-player-init]` (+ `data-player-src="<url .m3u8>"`).
 Contrôles délégués `[data-player-control="playpause|mute|fullscreen"]`, timeline scrubbable, ratio auto
