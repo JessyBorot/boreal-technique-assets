@@ -114,6 +114,16 @@ est injectée en JS par-dessus la ligne sombre existante, puis scalée en Y (`sc
 `bottom center` sur `.timeline9_progress`). Barba-safe (`gsap.context`) ; en `prefers-reduced-motion`
 la ligne est laissée pleine (bleu statique).
 
+### Gradient Wave Text au scroll (Osmo)
+`initGradientWaveText` : sur chaque `[data-gradient-wave-text]`, SplitText découpe le titre en caractères
+qui, au scroll, passent de `startColor` (inactif, défaut `rgba(255,255,255,0.2)`) → une **vague** `waveColor`
+(défaut = bleu `--_primitives---colors--dodger-blue`, résolu en hex car GSAP n'interpole pas un `var()`) →
+`endColor` (couleur CSS de repos du titre). Overrides par attribut : `data-gradient-wave-scroll-start`
+(défaut `top 90%`), `-scroll-end` (`center 40%`), `-color-start`, `-color-wave`, `-duration` (0.4), `-scrub` (0.1).
+Requiert **SplitText** (chargé + registré dans le head). Barba-safe : registre `_gradientWaveSplits` reverté à
+chaque ré-init (le revert du SplitText tue aussi le contexte GSAP + ScrollTrigger). Désactivé en
+`prefers-reduced-motion` (titre laissé à sa couleur de repos). Utilisé sur les titres Mission / Vision (À Propos).
+
 ### Lecteur vidéo HLS (Bunny, Osmo advanced) — page Réalisation (T07)
 `initBunnyPlayer` : lecteur vidéo HLS custom sur `[data-bunny-player-init]` (+ `data-player-src="<url .m3u8>"`).
 Contrôles délégués `[data-player-control="playpause|mute|fullscreen"]`, timeline scrubbable, ratio auto
