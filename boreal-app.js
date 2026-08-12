@@ -1555,10 +1555,29 @@ function EffectPanorama({ swiper, extendParams, on }) {
   });
 }
 
+// Fondu par angle : une carte qui approche le profil devient, sous l'effet de la perspective,
+// une lamelle très haute (jusqu'à 530px pour une carte de 251px) — c'est elle qui se faisait
+// rogner en haut/en bas. On la fait disparaître AVANT qu'elle ne prenne cette taille.
+// Supprime aussi les cartes de dos (cos < 0), qui revenaient grossies ~3,6× par l'avant.
+const PANO_FADE_IN = 0.55;    // cos(rotateY) ≥ 0.55 (≈57°) → pleine opacité
+const PANO_FADE_OUT = 0.30;   // cos(rotateY) ≤ 0.30 (≈72°) → invisible
+const PANO_MAX_MAG = 1.35;    // grossissement max d'une carte encore visible (à l'angle de coupure)
+
+function panoApplyFade(swiper) {
+  swiper.slides.forEach((s) => {
+    const m = /rotateY\((-?[\d.]+)deg\)/.exec(s.style.transform || "");
+    if (!m) return;
+    const c = Math.cos((parseFloat(m[1]) * Math.PI) / 180);
+    const t = Math.max(0, Math.min(1, (c - PANO_FADE_OUT) / (PANO_FADE_IN - PANO_FADE_OUT)));
+    s.style.opacity = (t * t * (3 - 2 * t)).toFixed(3);   // smoothstep
+  });
+}
+
 function initPanoramaCarousel() {
   // Cleanup (Barba / ré-entrée)
   if (window._panoSwiper) { try { window._panoSwiper.destroy(true, true); } catch (e) {} window._panoSwiper = null; }
   if (window._panoST) { try { window._panoST.kill(); } catch (e) {} window._panoST = null; }
+  if (window._panoResize) { window.removeEventListener("resize", window._panoResize); window._panoResize = null; }
 
   const stage = document.querySelector("[data-pano]");
   if (!stage) return;
@@ -1606,6 +1625,40 @@ function initPanoramaCarousel() {
   });
   window._panoSwiper = swiper;
 
+  const tilt = stage.querySelector(".realisations_tilt") || ring.parentElement;
+
+  // --- Perspective proportionnelle à la taille des cartes ---
+  // Netfolie : perspective 1200px pour des cartes de 275px (carte + gap) → rapport 4,36.
+  // Nos cartes sont plus grandes ; garder 1200px en dur donnait un grossissement de 8,5×
+  // au lieu de 3,6× → cartes énormes qui débordaient et se faisaient rogner.
+  const PANO_PERSPECTIVE_RATIO = 1200 / (256 + 19);
+
+  // --- Réserve verticale : calculée, pas devinée ---
+  // Deux contributions : (1) le tilt soulève les extrémités du plan,
+  // (2) la perspective grossit les cartes proches. On lit l'angle et l'échelle réels du
+  // tilt dans la matrice calculée → juste à tous les breakpoints, sans valeur en dur.
+  const fitStage = () => {
+    const size = swiper.slidesSizesGrid[0] + swiper.params.spaceBetween;
+    if (size > 0) ring.style.perspective = Math.round(size * PANO_PERSPECTIVE_RATIO) + "px";
+
+    const cardH = swiper.slides[0] ? swiper.slides[0].offsetHeight : 0;
+    if (!cardH) return;
+    const m = new DOMMatrixReadOnly(getComputedStyle(tilt).transform);
+    const angle = Math.atan2(m.b, m.a);
+    const scale = Math.hypot(m.a, m.b) || 1;
+    const lift = (ring.clientWidth / 2) * Math.abs(Math.sin(angle)) * scale;   // (1)
+    const grow = (cardH * scale * PANO_MAX_MAG) / 2 - cardH / 2;               // (2)
+    const reserve = Math.ceil(Math.max(0, lift + grow)) + 20;
+    stage.style.paddingTop = reserve + "px";
+    stage.style.paddingBottom = reserve + "px";
+  };
+
+  swiper.on("progress", () => panoApplyFade(swiper));
+  panoApplyFade(swiper);
+  fitStage();
+  window.addEventListener("resize", fitStage);
+  window._panoResize = fitStage;
+
   // --- Pilotage au scroll (non bloquant) + drag cumulatif ---
   // `base`   = translate au repos ; `dragOffset` = ce que l'utilisateur a ajouté à la main.
   // Sans dragOffset, la prochaine frame de scroll écraserait le glissement de l'utilisateur.
@@ -1634,7 +1687,7 @@ function initPanoramaCarousel() {
       start: "top bottom",
       end: "bottom top",
       onUpdate: (self) => apply(self.progress),
-      onRefresh: (self) => apply(self.progress)
+      onRefresh: (self) => { fitStage(); apply(self.progress); }
     });
   }
 }

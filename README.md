@@ -87,6 +87,26 @@ chez Netfolie** :
 
 Le **drag reste cumulatif** : `dragOffset` mémorise l'écart introduit à la main au `touchEnd`,
 sinon la frame de scroll suivante écraserait le glissement de l'utilisateur.
+
+**Cartes rognées en haut/en bas — résolu (2026-08-12, 2ᵉ passe).** Trois causes cumulées, toutes
+mesurées avant correction :
+1. **Perspective en dur à 1200px.** Netfolie : 1200px pour des cartes de 275px (carte + gap),
+   soit un rapport **4,36**. Nos cartes font 336px → à 1200px le grossissement max passait à
+   **8,5×** (au lieu de 3,6× chez eux) et les cartes proches devenaient énormes. La perspective
+   est maintenant calculée : `taille_carte × 4.36` (`PANO_PERSPECTIVE_RATIO`), à chaque breakpoint.
+2. **Les cartes vues de profil.** À rotateY ≈ 86°, la perspective transforme une carte de 251px
+   en lamelle de **532px de haut** — illisible, et c'est elle qui se faisait couper. Réserver la
+   hauteur pour elle donnait une section de **1245px** (surtout du vide). À la place, un **fondu
+   par angle** (`panoApplyFade`, smoothstep sur `cos(rotateY)`) : pleine opacité jusqu'à ~57°,
+   invisible à ~72°. Supprime aussi les cartes **de dos**, qui revenaient grossies par l'avant.
+3. **Réserve verticale devinée.** Elle est désormais **calculée** (`fitStage`) à partir de
+   l'angle et de l'échelle réels lus dans la matrice du tilt : `lift` (le tilt soulève les
+   extrémités du plan) + `grow` (grossissement max d'une carte encore visible). Recalculée au
+   resize et au `ScrollTrigger.refresh`. Résultat : ~695px à 1440px de large, sans rognage.
+
+⚠️ `fitStage` pose `padding-top`/`padding-bottom` **en inline** sur `.realisations_stage` : c'est
+une valeur de géométrie calculée, pas un choix de design. Le `clamp()` de la classe Webflow reste
+comme repli si le JS ne tourne pas. Les paddings **horizontaux** restent pilotés par le Designer.
 Pas d'épinglage → la section a une hauteur normale, on scrolle librement.
 Barba-safe (`swiper.destroy` + `ScrollTrigger.kill` à chaque ré-init).
 
