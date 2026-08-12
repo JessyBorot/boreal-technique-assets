@@ -58,34 +58,65 @@ il retrouve la carte réellement cliquée (`elementFromPoint`, proxy ignoré le 
 et ouvre sa modale via `openModalByName` (helper partagé avec `initModalBasic`). Poser
 `data-modal-target="<nom>"` sur la carte et `data-modal-name="<nom>"` sur la pop-up.
 
-### Section Réalisations — panorama 3D (remplace le tornado, Userback #8034641)
-`initPanoramaCarousel` (remplace l'ancien `init3DCardsTornado`, retiré) : cylindre 3D façon
-Netfolie **construit avec Swiper** (même techno que Netfolie) + un effet panorama custom
-(`on.setTranslate` → chaque carte placée sur le cylindre via son `progress`). Swiper gère
-drag + momentum. La rotation **suit la progression du scroll** de la page (section hauteur
-normale, `setProgress` → **PAS d'épinglage**, on passe librement à la suite). Tilt statique
-`rotateZ(3deg) rotateX(6deg)` sur un wrapper `[data-pano-tilt]` créé en JS (angle sans dérive
-latérale). Curseur « Glisser ». Params : `ANGLE=40` (écart entre cartes), `R=560` (rayon).
-Barba-safe (`swiper.destroy` + retrait des listeners à chaque ré-init).
+### Section Réalisations — panorama (recette Netfolie exacte, Userback #8034641)
+`initPanoramaCarousel` — **reconstruit de zéro le 2026-08-12** après plusieurs itérations
+ratées (cylindre maison, coverflow, rangée plate : le client n'a jamais été satisfait).
 
-⚠️ **Requiert Swiper 11** chargé dans Webflow :
+**Pourquoi ça ne marchait pas :** on rejouait une math approchée. Relevé sur netfolie.com,
+leur carrousel n'est pas un cylindre maison mais le **module officiel Swiper
+`EffectPanorama`** (`effect: 'panorama'`). Le module est désormais embarqué dé-minifié dans
+`boreal-app.js` (fonction `EffectPanorama`) et alimenté avec les **valeurs exactes relevées
+chez Netfolie** :
+
+| Réglage | Valeur Netfolie |
+|---|---|
+| `panoramaEffect` | `{ depth: 0, rotate: 37 }` |
+| `slidesPerView` / `spaceBetween` | `4` / `19→34px` selon breakpoint |
+| `centeredSlides` · `loop` · `speed` | `true` · `true` · `600` |
+| `freeMode` | activé, **`momentum: false`** |
+| `resistanceRatio` | `0.85` |
+| `perspective` (conteneur) | `1200px` |
+| tilt (wrapper parent) | `rotate(9deg) scale(1.2)` |
+| rayon des cartes | `36px`, ratio `5/4` |
+
+**Différence assumée vs Netfolie :** chez eux la rotation est mappée sur le scroll **absolu**
+(`translate = start − scrollY × 0.5`) → passé la section, le carrousel **se vide**
+(vérifié : 0 carte visible en bas de page). Ici le pilotage est **relatif à la section**
+(ScrollTrigger, progression 0→1 pendant la traversée de l'écran, même ratio 0.5 px/px) et
+`loopFix()` garde l'anneau peuplé en permanence. Visuellement identique, sans l'état vide.
+
+Le **drag reste cumulatif** : `dragOffset` mémorise l'écart introduit à la main au `touchEnd`,
+sinon la frame de scroll suivante écraserait le glissement de l'utilisateur.
+Pas d'épinglage → la section a une hauteur normale, on scrolle librement.
+Barba-safe (`swiper.destroy` + `ScrollTrigger.kill` à chaque ré-init).
+
+⚠️ **Requiert Swiper 11** chargé dans Webflow (sans lui le module sort en `return` — c'était
+le cas en prod jusqu'au 2026-08-12, la section était donc morte) :
 - Head : `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">`
 - Footer, **avant** `boreal-app.js` : `<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>`
 
-Le module adapte la structure existante en JS (ajoute `swiper`/`swiper-wrapper`/`swiper-slide`
-+ le wrapper de tilt) — **rien à changer dans le Designer** hormis charger Swiper.
+**Structure Webflow (classes Client-First namespacées) :**
+```
+.realisations_stage      [data-pano]        (hors container-large = pleine largeur)
+  .realisations_tilt                        (rotate 9° + scale 1.2)
+    .realisations_viewport [data-pano-ring] (perspective 1200px ; devient le .swiper)
+      .realisations_item   [data-pcard]     (lien vers l'étude de cas ; 1 par réalisation)
+        .realisations_card
+          .realisations_image
+          .realisations_meta
+            .tag.is-alternate
+            .realisations_titles > h3.heading-style-h6
+```
+⚠️ Les anciennes classes `cards-tornado*` / `demo-card` / `cover-image` ont été **abandonnées
+ici** (pas renommées : elles servent encore sur T06 et T07). C'étaient deux sources de bug —
+`.cards-tornado__item` gardait la géométrie tornade (`position:absolute; left:50%; top:50%`),
+incompatible avec une rangée Swiper, et `demo-card`/`cover-image` sont des noms génériques
+Osmo partagés entre modules.
 
-**Structure Webflow attendue :**
-```
-[data-pano]            (section)
-  [data-pano-ring]     (Collection List — wrapper des cartes)
-    [data-pcard]       (Collection Item = lien vers l'étude de cas ; 1 par réalisation)
-      … image + titre + tag …
-  [data-pano-cursor]   (div « Glisser » ; optionnel mais recommandé)
-```
-Le nombre de cartes = nombre d'items de la Collection (idéalement ~10-14 pour un anneau bien
-rempli). Largeur/hauteur des cartes, perspective, tilt et hauteur de section sont gérés par
-`boreal-styles.css` (surchargeables). ⚠️ Rendu visible **uniquement sur l'URL publiée**.
+Le look statique (rayon, ratio, meta, tilt, perspective) vit dans les **classes Webflow** →
+éditable dans le Designer. `boreal-styles.css` ne porte que la glue Swiper, le scrim et le
+`prefers-reduced-motion`. Le nombre de cartes = items de la Collection (~10-14 idéalement).
+⚠️ Rendu visible **uniquement sur l'URL publiée**.
 
 ### Section Spécialisations T02 — masonry grid (Osmo, remplace les cartes icônes, Userback #8034721)
 `initMasonryGrid` : grid **masonry** (colonnes de hauteurs inégales) sur `[data-masonry-list]`.

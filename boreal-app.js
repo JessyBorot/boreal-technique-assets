@@ -1500,93 +1500,142 @@ function initLogoWallCycle() {
   });
 }
 
-// ---- RÉALISATIONS — panorama 3D (Swiper, piloté par le scroll) ----
-// Cylindre facon Netfolie via Swiper (drag/momentum) + effet custom. Rotation pilotée par le
-// scroll de la page (section hauteur normale => NON bloquant). Requiert Swiper (chargé via Webflow).
-// Structure Webflow : [data-pano] > [data-pano-ring] (cartes [data-pcard] dedans) + [data-pano-cursor].
+// ---- RÉALISATIONS — panorama 3D (Swiper `effect: panorama`) ----
+// Reprise FIDÈLE de l'effet Netfolie. Relevé sur netfolie.com (août 2026) : ils n'utilisent
+// pas un cylindre maison mais le module officiel Swiper `EffectPanorama`, avec
+// panoramaEffect { depth: 0, rotate: 37 }, 4 cartes/vue, centeredSlides, loop, freeMode sans
+// momentum, resistanceRatio .85, perspective 1200px sur le conteneur, et un tilt statique
+// rotate(9deg) scale(1.2) sur le wrapper parent. Toutes les tentatives précédentes (cylindre
+// maison, coverflow, rangée plate) échouaient parce que la MATH n'était pas la bonne.
+//
+// Structure Webflow : [data-pano] > [data-pano-tilt] > [data-pano-ring] > [data-pcard] × N.
+// Requiert Swiper 11 (chargé dans le custom code Webflow, AVANT boreal-app.js).
+//
+// Différence assumée vs Netfolie : chez eux la rotation est mappée sur le scroll ABSOLU de la
+// page (translate = start − scrollY × 0.5) — passé la section, le carrousel se vide. Ici le
+// pilotage est RELATIF à la section (ScrollTrigger, progression 0→1 pendant la traversée) et
+// `loopFix()` garde l'anneau toujours peuplé. Visuellement identique, sans l'état vide.
+
+// Effet panorama officiel Swiper (dé-minifié depuis le bundle chargé par Netfolie).
+function EffectPanorama({ swiper, extendParams, on }) {
+  extendParams({ panoramaEffect: { depth: 200, rotate: 30 } });
+
+  on("beforeInit", () => {
+    if (swiper.params.effect !== "panorama") return;
+    swiper.classNames.push(`${swiper.params.containerModifierClass}panorama`);
+    swiper.classNames.push(`${swiper.params.containerModifierClass}3d`);
+    const p = { watchSlidesProgress: true };
+    Object.assign(swiper.params, p);
+    Object.assign(swiper.originalParams, p);
+  });
+
+  on("progress", () => {
+    if (swiper.params.effect !== "panorama") return;
+    const sizes = swiper.slidesSizesGrid;
+    const { depth = 200, rotate = 30 } = swiper.params.panoramaEffect;
+    const half = (rotate * Math.PI) / 180 / 2;
+    const ratio = 1 / (180 / rotate);
+    for (let i = 0; i < swiper.slides.length; i += 1) {
+      const slide = swiper.slides[i];
+      const size = sizes[i];
+      const o = slide.progress + (swiper.params.centeredSlides ? 0 : 0.5 * (swiper.params.slidesPerView - 1));
+      const t = 1 - Math.cos(o * ratio * Math.PI);
+      const x = o * (size / 3) * t;
+      const rY = o * rotate;
+      const z = (0.5 * size) / Math.sin(half) * t - depth;
+      slide.style.transform = swiper.params.direction === "horizontal"
+        ? `translateX(${x}px) translateZ(${z}px) rotateY(${rY}deg)`
+        : `translateY(${x}px) translateZ(${z}px) rotateX(${-rY}deg)`;
+    }
+  });
+
+  on("setTransition", (s, duration) => {
+    if (swiper.params.effect !== "panorama") return;
+    swiper.slides.forEach((sl) => { sl.style.transitionDuration = `${duration}ms`; });
+  });
+}
+
 function initPanoramaCarousel() {
   // Cleanup (Barba / ré-entrée)
   if (window._panoSwiper) { try { window._panoSwiper.destroy(true, true); } catch (e) {} window._panoSwiper = null; }
-  if (window._panoScroll) { window.removeEventListener("scroll", window._panoScroll); window._panoScroll = null; }
-  if (window._panoCursorRAF) { cancelAnimationFrame(window._panoCursorRAF); window._panoCursorRAF = null; }
+  if (window._panoST) { try { window._panoST.kill(); } catch (e) {} window._panoST = null; }
 
   const stage = document.querySelector("[data-pano]");
   if (!stage) return;
   const ring = stage.querySelector("[data-pano-ring]");
   if (!ring) return;
-  if (typeof Swiper === "undefined") { console.warn("[panorama] Swiper non chargé — ajoute le <script> Swiper dans Webflow (footer, avant boreal-app.js)."); return; }
+  if (typeof Swiper === "undefined") {
+    console.warn("[panorama] Swiper non chargé — ajoute swiper-bundle dans le custom code Webflow (footer, AVANT boreal-app.js).");
+    return;
+  }
 
-  // Adapter la structure existante au format Swiper (sans rien changer dans le Designer)
+  // Adapter la structure Webflow au format Swiper (rien à changer dans le Designer)
   ring.classList.add("swiper");
   let wrapper = ring.querySelector(":scope > .swiper-wrapper");
   if (!wrapper) {
     wrapper = document.createElement("div");
     wrapper.className = "swiper-wrapper";
-    Array.from(ring.querySelectorAll("[data-pcard]")).forEach((c) => { c.classList.add("swiper-slide"); wrapper.appendChild(c); });
-    ring.appendChild(wrapper);
-  }
-  // Wrapper de TILT (angle statique => la rotation ne dérive pas latéralement)
-  let tilt = ring.parentElement;
-  if (!tilt || !tilt.hasAttribute("data-pano-tilt")) {
-    tilt = document.createElement("div");
-    tilt.setAttribute("data-pano-tilt", "");
-    ring.parentNode.insertBefore(tilt, ring);
-    tilt.appendChild(ring);
-  }
-
-  const ANGLE = 40, R = 560;
-  function panorama(sw) {
-    const centerX = sw.width / 2;
-    sw.slides.forEach((slide) => {
-      const size = slide.swiperSlideSize;
-      const off = slide.swiperSlideOffset;
-      const c = (-sw.translate + centerX - off - size / 2) / size;   // distance au centre (en cartes) — pilote la rotation
-      const angle = c * ANGLE;
-      const rad = (angle * Math.PI) / 180;
-      const x = Math.sin(rad) * R;
-      const z = (Math.cos(rad) - 1) * R;
-      const baseX = centerX - size / 2 - off;                        // centre la carte (FIXE => pas de dérive latérale)
-      slide.style.transform = `translateX(${baseX + x}px) translateZ(${z}px) rotateY(${angle}deg)`;
-      const f = Math.cos(rad);
-      slide.style.zIndex = String(Math.round(f * 100) + 100);
-      slide.style.opacity = (0.12 + 0.88 * Math.max(0, f + 0.1)).toFixed(3);
-      slide.style.filter = `brightness(${(0.45 + 0.55 * Math.max(0, f)).toFixed(3)})`;
+    Array.from(ring.querySelectorAll("[data-pcard]")).forEach((c) => {
+      c.classList.add("swiper-slide");
+      wrapper.appendChild(c);
     });
+    ring.appendChild(wrapper);
   }
 
   const swiper = new Swiper(ring, {
-    slidesPerView: "auto", centeredSlides: true, virtualTranslate: true, grabCursor: true,
-    watchSlidesProgress: true, resistanceRatio: 0.65, speed: 500,
-    freeMode: { enabled: true, momentum: true, momentumRatio: 0.6, sticky: false },
-    on: {
-      setTranslate(sw) { panorama(sw); },
-      setTransition(sw, d) { sw.slides.forEach((s) => { s.style.transitionDuration = d + "ms"; }); },
-      init(sw) { panorama(sw); }
+    modules: [EffectPanorama],
+    effect: "panorama",
+    panoramaEffect: { depth: 0, rotate: 37 },   // ← valeurs relevées chez Netfolie
+    slidesPerView: 4,
+    spaceBetween: 22,
+    centeredSlides: true,
+    loop: true,
+    speed: 600,
+    grabCursor: true,
+    watchSlidesProgress: true,
+    resistanceRatio: 0.85,
+    slideToClickedSlide: false,
+    freeMode: { enabled: true, momentum: false, sticky: false, minimumVelocity: 0.02 },
+    breakpoints: {
+      0:    { slidesPerView: 1.6, spaceBetween: 13 },
+      768:  { slidesPerView: 2.4, spaceBetween: 17 },
+      992:  { slidesPerView: 3,   spaceBetween: 19 },
+      1280: { slidesPerView: 4,   spaceBetween: 22 },
+      1920: { slidesPerView: 4,   spaceBetween: 34 }
     }
   });
   window._panoSwiper = swiper;
 
-  // Rotation pilotée par le scroll de la page (0..1 pendant que la section traverse l'écran)
-  const onScroll = () => {
-    const r = stage.getBoundingClientRect(), vh = window.innerHeight;
-    const p = Math.min(1, Math.max(0, (vh - r.top) / (vh + r.height)));
-    swiper.setProgress(p, 0);
-  };
-  window._panoScroll = onScroll;
-  window.addEventListener("scroll", onScroll, { passive: true });
-  onScroll();
+  // --- Pilotage au scroll (non bloquant) + drag cumulatif ---
+  // `base`   = translate au repos ; `dragOffset` = ce que l'utilisateur a ajouté à la main.
+  // Sans dragOffset, la prochaine frame de scroll écraserait le glissement de l'utilisateur.
+  const base = swiper.translate;
+  let dragOffset = 0;
+  let dragging = false;
+  let expected = base;
 
-  // Curseur « Glisser »
-  const cursor = stage.querySelector("[data-pano-cursor]");
-  if (cursor) {
-    let tx = 0, ty = 0, cx = 0, cy = 0;
-    const follow = () => { cx += (tx - cx) * 0.2; cy += (ty - cy) * 0.2; cursor.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`; window._panoCursorRAF = requestAnimationFrame(follow); };
-    follow();
-    stage.addEventListener("pointerenter", () => cursor.classList.add("is-on"));
-    stage.addEventListener("pointerleave", () => cursor.classList.remove("is-on"));
-    stage.addEventListener("pointermove", (e) => { const r = stage.getBoundingClientRect(); tx = e.clientX - r.left; ty = e.clientY - r.top; });
-    stage.addEventListener("pointerdown", () => cursor.classList.add("is-grab"));
-    window.addEventListener("pointerup", () => cursor.classList.remove("is-grab"));
+  swiper.on("touchStart", () => { dragging = true; });
+  swiper.on("touchEnd", () => {
+    dragging = false;
+    dragOffset += swiper.translate - expected;   // mémorise l'écart introduit par le drag
+  });
+
+  const apply = (progress) => {
+    if (dragging) return;                        // pendant le drag, Swiper est maître
+    const span = (window.innerHeight + stage.offsetHeight) * 0.5;  // 0.5 px/px = ratio Netfolie
+    expected = base - progress * span;
+    swiper.setTranslate(expected + dragOffset);
+    swiper.loopFix();                            // garde l'anneau peuplé (Netfolie ne le fait pas)
+  };
+
+  if (typeof ScrollTrigger !== "undefined") {
+    window._panoST = ScrollTrigger.create({
+      trigger: stage,
+      start: "top bottom",
+      end: "bottom top",
+      onUpdate: (self) => apply(self.progress),
+      onRefresh: (self) => apply(self.progress)
+    });
   }
 }
 
