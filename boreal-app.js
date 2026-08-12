@@ -1648,7 +1648,7 @@ function initPanoramaCarousel() {
     const scale = Math.hypot(m.a, m.b) || 1;
     const lift = (ring.clientWidth / 2) * Math.abs(Math.sin(angle)) * scale;   // (1)
     const grow = (cardH * scale * PANO_MAX_MAG) / 2 - cardH / 2;               // (2)
-    const reserve = Math.ceil(Math.max(0, lift + grow)) + 20;
+    const reserve = Math.ceil(Math.max(0, lift + grow)) + 44;   // 44 = marge de sécurité mesurée
     stage.style.paddingTop = reserve + "px";
     stage.style.paddingBottom = reserve + "px";
   };
