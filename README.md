@@ -138,6 +138,25 @@ Le look statique (rayon, ratio, meta, tilt, perspective) vit dans les **classes 
 `prefers-reduced-motion`. Le nombre de cartes = items de la Collection (~10-14 idéalement).
 ⚠️ Rendu visible **uniquement sur l'URL publiée**.
 
+**Où le module est utilisé (audit du 2026-08-12) :** un balayage des 11 pages publiées a
+comparé tous les `data-*` du DOM aux attributs réellement gérés par `boreal-app.js`. Résultat :
+`data-3d-tornado-*` traînait encore sur **T02** et **T07** alors que `init3DCardsTornado` avait
+été supprimé → deux sections mortes (7 cartes empilées aux mêmes coordonnées, 900px de vide).
+Les deux ont été converties au panorama :
+
+| Page | Section | Statut |
+|---|---|---|
+| Accueil (T01) | « Des événements qui parlent pour eux. » | 13 cartes ✅ |
+| T02 Intérieurs | « Des événements qui parlent pour eux. » | 7 cartes ✅ (ex-tornade morte) |
+| T07 Réalisation | « D'autres réalisations du même type. » | 7 cartes ✅ (ex-tornade morte, = Userback **#8034857**) |
+
+⚠️ **7 cartes, c'est peu** pour 4 par vue en boucle : l'anneau est clairsemé sur les côtés.
+Viser ~10-14 items quand la Collection CMS sera branchée.
+
+**Autre orphelin repéré par l'audit, non traité :** `data-underline-link` (12 occurrences sur
+**toutes** les pages, probablement les liens de footer) n'est géré ni par le JS ni par le CSS —
+effet de soulignement mort à confirmer avec Jessy.
+
 ### Section Spécialisations T02 — masonry grid (Osmo, remplace les cartes icônes, Userback #8034721)
 `initMasonryGrid` : grid **masonry** (colonnes de hauteurs inégales) sur `[data-masonry-list]`.
 Nombre de colonnes + gap via CSS (`--masonry-col` / `--masonry-gap`, 4 → 3 → 2 par breakpoint) ;
