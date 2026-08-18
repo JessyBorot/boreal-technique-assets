@@ -526,3 +526,31 @@
   visibility: hidden;
   position: absolute;
 }
+
+/* ===== CARRIÈRES (T10) — offres repliées + bouton « Voir plus » =====
+   Le JS (initCareerJobToggle) déplace le corps de l'offre dans .career14_details et
+   injecte .career14_toggle. Ici : uniquement l'habillage du bouton et le repli. */
+.career14_details { overflow: hidden; }
+
+.career14_toggle {
+  display: inline-flex; align-items: center; gap: 0.5em;
+  margin: 0.5rem 0; padding: 0;
+  background: none; border: 0; cursor: pointer;
+  font: inherit; font-size: 1rem; line-height: 1.4;
+  color: var(--_primitives---colors--white);
+  transition: color 0.25s ease;
+}
+.career14_toggle:hover,
+.career14_toggle:focus-visible { color: var(--_primitives---colors--dodger-blue); }
+.career14_toggle > [data-career-toggle-label] {
+  padding-bottom: 2px;
+  border-bottom: var(--_ui-styles---stroke--border-width, 1px) solid currentColor;
+}
+.career14_toggle-icon {
+  width: 0.5em; height: 0.5em;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-0.15em) rotate(45deg);
+  transition: transform 0.35s cubic-bezier(0.625, 0.05, 0, 1);
+}
+[data-career-status="active"] .career14_toggle-icon { transform: translateY(0.1em) rotate(-135deg); }

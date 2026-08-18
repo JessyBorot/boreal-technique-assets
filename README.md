@@ -6,7 +6,7 @@ Fichiers statiques (JS/CSS) servis en CDN via **jsDelivr** pour le site Webflow
 ## Fichiers
 - `boreal-app.js` — tous les modules (nav, curseur, parallax, split titres, hero Flip,
   hero bg-zoom, stacking cards, **radial cards slider** (Osmo/GSAP Draggable), odometer,
-  logo wall, panorama 3D réalisations, footer
+  logo wall, panorama 3D réalisations, offres d'emploi repliées (T10), footer
   parallax, parallax image layers (hero Réalisation T07), mini showreel player (Flip, T07),
   layered image slider (Observer/CustomEase, T07), lecteur vidéo HLS Bunny (hls.js, T07),
   panneau formulaire underlay,
@@ -150,8 +150,15 @@ Les deux ont été converties au panorama :
 | T02 Intérieurs | « Des événements qui parlent pour eux. » | 7 cartes ✅ (ex-tornade morte) |
 | T07 Réalisation | « D'autres réalisations du même type. » | 7 cartes ✅ (ex-tornade morte, = Userback **#8034857**) |
 
-⚠️ **7 cartes, c'est peu** pour 4 par vue en boucle : l'anneau est clairsemé sur les côtés.
-Viser ~10-14 items quand la Collection CMS sera branchée.
+**Trop peu de cartes = anneau mort — résolu (2026-08-18).** Swiper **désactive `loop`** quand il
+y a moins de `slidesPerView × 2` slides (`Swiper Loop Warning` dans la console). Avec 7
+réalisations pour 4 cartes/vue (il en faut 8), T02 et T07 sortaient un anneau figé, à moitié
+vide — l'accueil (13 cartes) n'était pas touché, d'où le « ça marche sur l'accueil seulement ».
+Le module **duplique désormais les cartes** jusqu'à `PANO_MIN_SLIDES = 12` (4/vue × 3, pour un
+anneau plein sur les côtés) : les clones portent `data-pano-clone` (+ `aria-hidden` et
+`tabindex="-1"`) et sont retirés en début de ré-init, donc jamais cumulés par Barba.
+Viser quand même ~10-14 items réels quand la Collection CMS sera branchée : les doublons se
+voient sur un anneau de 7.
 
 **Autre orphelin repéré par l'audit, non traité :** `data-underline-link` (12 occurrences sur
 **toutes** les pages, probablement les liens de footer) n'est géré ni par le JS ni par le CSS —
@@ -228,6 +235,29 @@ listeners globaux document/window) à chaque ré-init. CSS `.bunny-player__*` (S
 ⚠️ **Requiert hls.js** chargé dans le **footer**, **avant** `boreal-app.js` :
 `<script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.11"></script>`
 (Safari lit le HLS nativement ; hls.js couvre Chrome/Firefox/Edge.)
+
+### Offres d'emploi repliées — page Carrières (T10)
+`initCareerJobToggle` : chaque `.career14_item` n'affiche au repos que **le titre (+ tag) et la
+ligne d'accroche** ; tout le reste (Description, paragraphe, Compétences, lieu/temps plein,
+bouton *Postuler*) est déplacé en JS dans un conteneur injecté `[data-career-body]`
+(`.career14_details`) replié à `height: 0`, et un bouton **« Voir plus » / « Voir moins »**
+(`.career14_toggle`) est posé sous l'accroche.
+
+- **Rien à restructurer dans le Designer** — le module lit la pile de blocs de l'item et coupe
+  **après le premier bloc contenant un `<p>`** (= l'accroche), avec repli sur « les 2 premiers
+  blocs » si la structure change.
+- Bouton **au-dessus** du corps : sa position ne bouge pas entre ouvert et fermé.
+- Hauteur animée en GSAP (`height: 'auto'`, ease `osmo`, 0.55s) + `autoAlpha` (le contenu replié
+  est aussi hors tab-order). `prefers-reduced-motion` → bascule instantanée.
+- `ScrollTrigger.refresh()` **à l'init** (le repli raccourcit beaucoup la page) et **en fin
+  d'animation** : c'est aussi ce qui déclenche le filet des titres splittés masqués
+  (`initSplitHeadings`), sinon un titre replié peut rester invisible après ouverture.
+- a11y : `<button>` réel, `aria-expanded`, `aria-controls` vers l'id du corps.
+- Barba-safe : `data-career-toggle-init` empêche le double traitement ; `data-career-status`
+  sur l'item pilote la rotation du chevron en CSS.
+
+Habillage dans `boreal-styles.css` (`.career14_toggle`, chevron, repli) — souligné en blanc,
+bleu `dodger-blue` au survol/focus.
 
 ### Formulaire underlay (soumission)
 - Panneau latéral persistant (`initFixedUnderlayNavigation`) ouvert par tout `[data-underlay-nav-toggle]`.

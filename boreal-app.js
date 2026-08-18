@@ -92,6 +92,7 @@ function runPageModulesOnce(container) {
     initGradientWaveText,      // titres révélés en vague de couleur au scroll ([data-gradient-wave-text] — Osmo)
     init3dImageCarousel,       // carrousel cylindrique 3D drag/scroll ([data-3d-carousel-wrap] — Osmo, page À Propos)
     initMultiFilter,           // filtre multi-match CMS ([data-filter-group] — Osmo, page Réalisations T06)
+    initCareerJobToggle,       // offres d'emploi repliées + « Voir plus » (.career14_item — page Carrières T10)
     initSplitHeadings,
     initFlipOnScroll,        // hero home
     initBackgroundZoom,      // hero page service
@@ -1562,6 +1563,7 @@ function EffectPanorama({ swiper, extendParams, on }) {
 const PANO_FADE_IN = 0.55;    // cos(rotateY) ≥ 0.55 (≈57°) → pleine opacité
 const PANO_FADE_OUT = 0.30;   // cos(rotateY) ≤ 0.30 (≈72°) → invisible
 const PANO_MAX_MAG = 1.35;    // grossissement max d'une carte encore visible (à l'angle de coupure)
+const PANO_MIN_SLIDES = 12;   // 4 cartes/vue × 3 : plancher pour que `loop` reste actif (voir initPanoramaCarousel)
 
 function panoApplyFade(swiper) {
   swiper.slides.forEach((s) => {
@@ -1590,6 +1592,7 @@ function initPanoramaCarousel() {
 
   // Adapter la structure Webflow au format Swiper (rien à changer dans le Designer)
   ring.classList.add("swiper");
+  ring.querySelectorAll("[data-pano-clone]").forEach((n) => n.remove());   // ré-init : repartir des cartes d'origine
   let wrapper = ring.querySelector(":scope > .swiper-wrapper");
   if (!wrapper) {
     wrapper = document.createElement("div");
@@ -1599,6 +1602,23 @@ function initPanoramaCarousel() {
       wrapper.appendChild(c);
     });
     ring.appendChild(wrapper);
+  }
+
+  // --- Assez de cartes pour boucler ---
+  // Swiper désactive `loop` quand il y a moins de slidesPerView × 2 slides
+  // ("Swiper Loop Warning" dans la console) : l'anneau reste alors figé et à moitié vide.
+  // C'était le cas de T02 et T07 (7 réalisations pour 4 cartes/vue → il en faut 8).
+  // On duplique donc les cartes jusqu'au minimum, en marquant les clones pour pouvoir
+  // les retirer à la ré-init. PANO_MIN_SLIDES = 4/vue × 3 → anneau plein sur les côtés.
+  const originals = Array.from(wrapper.children);
+  if (originals.length && originals.length < PANO_MIN_SLIDES) {
+    for (let i = 0; wrapper.children.length < PANO_MIN_SLIDES; i += 1) {
+      const clone = originals[i % originals.length].cloneNode(true);
+      clone.setAttribute("data-pano-clone", "");
+      clone.setAttribute("aria-hidden", "true");      // doublons : hors lecture d'écran
+      clone.setAttribute("tabindex", "-1");
+      wrapper.appendChild(clone);
+    }
   }
 
   const swiper = new Swiper(ring, {
@@ -1691,6 +1711,86 @@ function initPanoramaCarousel() {
     });
   }
 }
+
+// ---- CARRIÈRES (T10) — offres repliées + bouton « Voir plus » ----
+// Dans le Designer, une .career14_item n'est qu'une pile de blocs (titre + tag, accroche,
+// « Description: », paragraphe, compétences, lieu/temps plein, bouton Postuler). Rien à
+// restructurer côté Webflow : le module garde visibles le bloc du titre et le bloc de
+// l'accroche, déplace tout le reste dans un conteneur injecté `[data-career-body]` et
+// pose un bouton de bascule. Hauteur animée en GSAP (`height: auto`), `ScrollTrigger.refresh()`
+// en fin d'animation (la page grandit, et c'est aussi le filet des titres splittés masqués).
+// Barba-safe : le DOM est reconstruit à chaque page, `data-career-toggle-init` évite le double
+// traitement si le module est rappelé sur la même page.
+function initCareerJobToggle() {
+  const items = (nextPage || document).querySelectorAll(".career14_item");
+  if (!items.length) return;
+
+  items.forEach((item, index) => {
+    if (item.hasAttribute("data-career-toggle-init")) return;
+
+    const blocks = Array.from(item.children).filter((el) => el.nodeType === 1);
+    // Coupe après le premier bloc contenant un <p> = la ligne d'accroche (repli sur 2 blocs
+    // si la structure change dans le Designer).
+    const firstParagraph = blocks.findIndex((b) => b.querySelector("p"));
+    const cut = firstParagraph >= 0 ? firstParagraph + 1 : Math.min(2, blocks.length);
+    const hidden = blocks.slice(cut);
+    if (!hidden.length) return;
+
+    item.setAttribute("data-career-toggle-init", "");
+    item.setAttribute("data-career-status", "not-active");
+
+    const bodyId = "career-offre-" + (index + 1);
+    const body = document.createElement("div");
+    body.className = "career14_details";
+    body.id = bodyId;
+    body.setAttribute("data-career-body", "");
+    hidden.forEach((el) => body.appendChild(el));
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "career14_toggle";
+    toggle.setAttribute("data-career-toggle", "");
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-controls", bodyId);
+    toggle.innerHTML = '<span data-career-toggle-label>Voir plus</span><span class="career14_toggle-icon" aria-hidden="true"></span>';
+    // Bouton AVANT le corps : il reste sous l'accroche, à la même place ouvert ou fermé.
+    item.appendChild(toggle);
+    item.appendChild(body);
+
+    const label = toggle.querySelector("[data-career-toggle-label]");
+    let open = false;
+    let anim = null;
+
+    gsap.set(body, { height: 0, autoAlpha: 0 });
+
+    toggle.addEventListener("click", () => {
+      open = !open;
+      if (anim) anim.kill();
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      item.setAttribute("data-career-status", open ? "active" : "not-active");
+      label.textContent = open ? "Voir moins" : "Voir plus";
+
+      const settle = () => { if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh(); };
+      if (reducedMotion) {
+        gsap.set(body, { height: open ? "auto" : 0, autoAlpha: open ? 1 : 0 });
+        settle();
+        return;
+      }
+      anim = gsap.to(body, {
+        height: open ? "auto" : 0,
+        autoAlpha: open ? 1 : 0,
+        duration: 0.55,
+        ease: "osmo",
+        onComplete: settle
+      });
+    });
+  });
+
+  // Le repli raccourcit fortement la page : les ScrollTriggers déjà posés (parallax, titres
+  // splittés) doivent être remesurés, sinon des titres restent masqués.
+  if (typeof ScrollTrigger !== "undefined") ScrollTrigger.refresh();
+}
+
 
 // ---- MODALES (Osmo basic modal B) — pop-ups secteurs ----
 // Ouvre une modale par son nom. Extrait comme helper car réutilisé par le slider radial
