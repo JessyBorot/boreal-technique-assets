@@ -554,3 +554,44 @@
   transition: transform 0.35s cubic-bezier(0.625, 0.05, 0, 1);
 }
 [data-career-status="active"] .career14_toggle-icon { transform: translateY(0.1em) rotate(-135deg); }
+
+
+/* ===== HALO DE SECTION (flare blanc) — casse le tout-noir du fond =====
+   Posé via l'attribut `data-section-glow="bottom"` sur une SECTION (aucun élément à créer dans
+   Webflow). Le halo est un ::after non cliquable, ancré au bas de la section et débordant
+   volontairement de la largeur pour que l'ellipse n'ait pas de bord visible.
+   Réglages par section (surcharge inline ou par classe) :
+     --glow-opacity : intensité du blanc au centre (0.14 par défaut — rester très bas sur fond noir)
+     --glow-height  : hauteur du flare
+     --glow-width   : largeur de l'ellipse
+   ⚠️ Le custom code ne s'exécute PAS dans le canvas Designer → juger le rendu sur l'URL PUBLIÉE. */
+[data-section-glow] {
+  position: relative;
+  --glow-opacity: 0.14;
+  --glow-height: clamp(14rem, 34vh, 26rem);
+  --glow-width: min(120rem, 150%);
+}
+/* Les enfants directs repassent au-dessus du halo (le ::after est à z-index 0). */
+[data-section-glow] > * { position: relative; z-index: 1; }
+
+[data-section-glow]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: var(--glow-width);
+  height: var(--glow-height);
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(ellipse 50% 100% at 50% 100%,
+    rgba(255, 255, 255, var(--glow-opacity)) 0%,
+    rgba(255, 255, 255, calc(var(--glow-opacity) * 0.45)) 32%,
+    rgba(255, 255, 255, calc(var(--glow-opacity) * 0.12)) 58%,
+    rgba(255, 255, 255, 0) 78%);
+}
+[data-section-glow="bottom"]::after { bottom: 0; }
+[data-section-glow="top"]::after { top: 0; transform: translateX(-50%) rotate(180deg); }
+
+@media screen and (max-width: 767px) {
+  [data-section-glow] { --glow-opacity: 0.11; --glow-height: clamp(10rem, 26vh, 16rem); --glow-width: 180%; }
+}
