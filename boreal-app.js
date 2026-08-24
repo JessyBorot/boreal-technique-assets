@@ -70,6 +70,7 @@ function initOnce() {
   initLenis();
   initAnchorSmoothScroll();
   initBoldFullScreenNavigation();
+  initNavLogoShrink();           // logo qui rétrécit passé 250px de scroll — persistant
   initCursorMarqueeEffect();
   initFixedUnderlayNavigation(); // panneau formulaire soumission (persistant)
   initAdvancedFormValidation();  // validation live du formulaire (Osmo) — persistant
@@ -306,6 +307,31 @@ function initBarbaNavUpdate(data) {
 // =========================================================
 
 // ---- NAV : bold full-screen ----
+// ---- LOGO DE LA NAV : réduction au scroll ----
+// Le JS ne fait que poser un état ; les largeurs vivent en CSS (`.logo_nav`), donc les tailles
+// de repos restent celles réglées dans Webflow et seules les tailles réduites sont écrites ici.
+// Persistant (initOnce) : la nav vit hors du container Barba, l'écouteur ne doit pas être
+// reposé à chaque page. Lenis scrolle réellement la page → `window.scrollY` et l'événement
+// `scroll` natif suffisent, pas besoin de s'abonner à Lenis.
+// Deux seuils (250 / 200) : un seuil unique fait clignoter le logo quand on s'arrête pile
+// dessus, la moindre oscillation de scroll rebasculant l'état.
+function initNavLogoShrink() {
+  const root = document.documentElement;
+  const SHRINK_AT = 250, GROW_BACK_AT = 200;
+  let shrunk = null;
+
+  const apply = () => {
+    const y = window.scrollY || 0;
+    const next = shrunk ? y > GROW_BACK_AT : y > SHRINK_AT;
+    if (next === shrunk) return;
+    shrunk = next;
+    root.setAttribute("data-nav-shrink", next ? "true" : "false");
+  };
+
+  apply(); // état correct dès le chargement (rechargement en milieu de page, ancre, retour arrière)
+  window.addEventListener("scroll", apply, { passive: true });
+}
+
 function initBoldFullScreenNavigation() {
   const getNav = () => document.querySelector("[data-navigation-status]");
   const setStatus = (v) => { const el = getNav(); if (el) el.setAttribute("data-navigation-status", v); };

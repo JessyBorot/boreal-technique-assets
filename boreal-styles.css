@@ -53,6 +53,22 @@
 .bold-nav-full__link:hover .bold-nav-full__link-text { transform: translateY(-100%) rotate(0.001deg); }
 
 
+/* ===== LOGO DE LA NAV — réduction au scroll =====
+   `initNavLogoShrink` (persistant) pose `data-nav-shrink` sur <html> passé ~250px de scroll.
+   Les tailles de REPOS (130px desktop/tablette, 100px mobile) restent réglées dans Webflow :
+   on n'écrit ici que les tailles réduites, pour ne pas dupliquer un réglage qui vit déjà
+   dans le Designer et finirait par diverger.
+   Le breakpoint 767px correspond au « Mobile » de Webflow (tablette = 768-991 → taille desktop). */
+.logo_nav { transition: width 0.45s cubic-bezier(0.625, 0.05, 0, 1); }
+[data-nav-shrink="true"] .logo_nav { width: 100px; }
+@media screen and (max-width: 767px) {
+  [data-nav-shrink="true"] .logo_nav { width: 80px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo_nav { transition: none; }
+}
+
+
 /* ===== CURSEUR marquee ===== */
 .cursor-marquee__card {
   transition: all 0.4s cubic-bezier(.75, 0, .25, 1);

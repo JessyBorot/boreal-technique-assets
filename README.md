@@ -296,6 +296,23 @@ statut sur `[data-navigation-status]` (`active`/`not-active`), ESC ferme. Intèg
 (hamburger, tile clip-path plein écran, liens qui montent en cascade + hover). L'ancien
 `initTwostepScalingNavigation` / `.twostep-nav__*` est retiré.
 
+### Logo de la nav — réduction au scroll
+`initNavLogoShrink` (persistant, `initOnce`) pose `data-nav-shrink="true"` sur `<html>` passé
+**250px** de scroll, et le relâche en repassant sous **200px**. Deux seuils volontairement
+différents : un seuil unique fait clignoter le logo quand on s'arrête pile dessus, la moindre
+oscillation rebasculant l'état. L'état est aussi calculé au chargement (rechargement en milieu
+de page, ancre, retour arrière).
+
+Le JS ne fait que poser l'état ; les largeurs sont en CSS sur `.logo_nav`. Les tailles de
+**repos** (130px desktop/tablette, 100px mobile) restent réglées **dans Webflow** — seules les
+tailles réduites sont dans `boreal-styles.css` (100px, et 80px sous 767px = breakpoint « Mobile »
+de Webflow ; la tablette 768-991 garde donc la taille desktop, conformément à la demande).
+Transition `width` en 0.45s, neutralisée en `prefers-reduced-motion`.
+
+Lenis scrolle réellement la page → `window.scrollY` et l'événement `scroll` natif suffisent, pas
+besoin de s'abonner à Lenis. Notre feuille étant chargée **après** celle de Webflow, la règle
+l'emporte à spécificité égale.
+
 ### Boutons — liseré tournant (même recette que les cartes chiffres STATS26)
 Le bouton du design system est **`.btn-animate-chars`** (toutes les pages, y compris le bouton
 d'envoi des formulaires `.form-submit-btn.btn-animate-chars`) : une règle suffit à couvrir tout
