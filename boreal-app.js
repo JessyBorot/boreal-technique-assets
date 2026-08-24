@@ -94,6 +94,7 @@ function runPageModulesOnce(container) {
     init3dImageCarousel,       // carrousel cylindrique 3D drag/scroll ([data-3d-carousel-wrap] — Osmo, page À Propos)
     initMultiFilter,           // filtre multi-match CMS ([data-filter-group] — Osmo, page Réalisations T06)
     initCareerJobToggle,       // offres d'emploi repliées + « Voir plus » (.career14_item — page Carrières T10)
+    initHeroTitleReveal,     // h1 de hero : lettre par lettre, joué à la fin de la transition
     initSplitHeadings,
     initFlipOnScroll,        // hero home
     initBackgroundZoom,      // hero page service
@@ -122,14 +123,43 @@ function runPageModulesOnce(container) {
 // -----------------------------------------
 // TRANSITIONS — COLUMN WIPE
 // -----------------------------------------
+// ---- SIGNAL « la transition de page est finie » ----
+// Le rideau de colonnes couvre l'écran pendant que la nouvelle page s'initialise : toute
+// animation d'entrée jouée à ce moment-là se déroule DERRIÈRE le rideau et n'est jamais vue.
+// Les timelines de transition émettent donc `boreal:page-ready` sur leur label `pageReady`,
+// et les modules concernés s'y accrochent au lieu de deviner un délai — un délai fixe se
+// désynchroniserait de la timeline à la première retouche des durées.
+// `onPageReady` joue tout de suite si le signal est DÉJÀ passé : selon le chemin (chargement
+// initial `once` vs navigation SPA `afterEnter`), les modules s'initialisent tantôt avant,
+// tantôt après la fin de la transition.
+let _pageReadyFired = false;
+function firePageReady() {
+  if (_pageReadyFired) return;
+  _pageReadyFired = true;
+  document.dispatchEvent(new CustomEvent("boreal:page-ready"));
+}
+function onPageReady(fn) {
+  if (_pageReadyFired) { fn(); return; }
+  let done = false;
+  const run = () => {
+    if (done) return;
+    done = true;
+    document.removeEventListener("boreal:page-ready", run);
+    fn();
+  };
+  document.addEventListener("boreal:page-ready", run);
+  setTimeout(run, 2500); // filet : jamais de titre laissé invisible si le signal se perd
+}
+
 function runPageOnceAnimation(next) {
   const wrap = document.querySelector("[data-transition-wrap]");
   const cols = wrap ? wrap.querySelectorAll("[data-transition-column]") : [];
   const tl = gsap.timeline();
   tl.call(() => { resetPage(next); }, null, 0);
-  if (reducedMotion || !cols.length) return tl;
+  if (reducedMotion || !cols.length) return tl.call(firePageReady);
   tl.set(cols, { yPercent: 100 }, 0);
   tl.to(cols, { yPercent: 200, duration: 0.6, stagger: 0.06 }, 0.15);
+  tl.call(firePageReady);
   return tl;
 }
 
@@ -151,14 +181,14 @@ function runPageEnterAnimation(next) {
     tl.set(next, { autoAlpha: 1 });
     tl.call(resetPage, [next]);
     tl.add("pageReady");
-    return new Promise((resolve) => tl.call(resolve, null, "pageReady"));
+    return new Promise((resolve) => tl.call(() => { firePageReady(); resolve(); }, null, "pageReady"));
   }
   tl.add("startEnter", 1);
   tl.set(next, { autoAlpha: 1 }, "startEnter");
   tl.call(resetPage, [next], "startEnter"); // stabilise le layout à couvert (pas de saut footer)
   tl.to(cols, { yPercent: 200, duration: 0.6, stagger: 0.06, overwrite: "auto" }, "startEnter");
   tl.add("pageReady");
-  return new Promise((resolve) => { tl.call(resolve, null, "pageReady"); });
+  return new Promise((resolve) => { tl.call(() => { firePageReady(); resolve(); }, null, "pageReady"); });
 }
 
 
@@ -166,7 +196,7 @@ function runPageEnterAnimation(next) {
 // BARBA
 // -----------------------------------------
 function initBarba() {
-  barba.hooks.before(() => { closeNav(); closeModals(); });
+  barba.hooks.before(() => { closeNav(); closeModals(); _pageReadyFired = false; });
 
   barba.hooks.beforeEnter((data) => {
     gsap.set(data.next.container, { position: "fixed", top: 0, left: 0, right: 0 });
@@ -573,9 +603,47 @@ function initContentRevealScroll() {
 //    n'est révélé que par le ScrollTrigger. Deux garde-fous contre le "texte qui
 //    reste invisible" : (1) en reduced-motion on ne masque pas du tout ;
 //    (2) le reveal a un fallback qui force l'affichage si le trigger ne joue pas.
+// ---- TITRE DE HERO : apparition lettre par lettre, après la transition de page ----
+// Les h1 sont TOUS en haut de page : un ScrollTrigger « top 80% » les déclenche
+// immédiatement, donc pendant que le rideau de transition couvre encore l'écran — le titre
+// s'anime sans témoin. On les joue donc sur le signal `boreal:page-ready` (voir onPageReady),
+// pas au scroll.
+// Split en chars ET lines : le masque est posé sur les LIGNES (une ligne = une fenêtre), les
+// CHARS montent à travers. Masquer par caractère découperait chaque lettre dans sa propre
+// boîte et casserait les jambages.
+function initHeroTitleReveal() {
+  if (reducedMotion) return; // titre laissé visible tel quel, jamais masqué
+  const titles = nextPage.querySelectorAll('h1[data-split="heading"]');
+  titles.forEach((title) => {
+    if (title.hasAttribute("data-split-done")) return;
+    title.setAttribute("data-split-done", "");
+    SplitText.create(title, {
+      type: "chars,lines", mask: "lines", autoSplit: true,
+      onSplit(instance) {
+        // autoSplit re-découpe au resize (et au chargement des polices) : une fois le titre
+        // apparu, on le laisse en place au lieu de le refaire entrer à chaque redécoupe.
+        if (title._heroRevealed) return gsap.set(instance.chars, { yPercent: 0, autoAlpha: 1 });
+        // Cascade BORNÉE : à 0.022s par lettre, le h1 de la page À Propos (70 caractères)
+        // mettait 2.1s à s'écrire — interminable en entrée de page. `stagger.amount` répartit
+        // une durée TOTALE, donc les titres courts gardent leur rythme et les longs accélèrent.
+        const spread = Math.min(instance.chars.length * 0.022, 0.9);
+        const tween = gsap.from(instance.chars, {
+          duration: 0.6, yPercent: 110, autoAlpha: 0, ease: "expo.out",
+          stagger: { amount: spread },
+          paused: true,   // l'état masqué est posé tout de suite (immediateRender), le jeu attend
+          onComplete: () => { title._heroRevealed = true; }
+        });
+        onPageReady(() => tween.play());
+        return tween;
+      }
+    });
+  });
+}
+
 function initSplitHeadings() {
   if (reducedMotion) return; // texte laissé visible tel quel, jamais masqué
-  const headings = nextPage.querySelectorAll('[data-split="heading"]');
+  // Les h1 sont pris en charge par initHeroTitleReveal (lettre par lettre, après la transition).
+  const headings = nextPage.querySelectorAll('[data-split="heading"]:not(h1)');
   headings.forEach((heading) => {
     if (heading.hasAttribute("data-split-done")) return;
     heading.setAttribute("data-split-done", "");

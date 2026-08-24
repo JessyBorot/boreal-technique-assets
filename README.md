@@ -296,6 +296,32 @@ statut sur `[data-navigation-status]` (`active`/`not-active`), ESC ferme. Intèg
 (hamburger, tile clip-path plein écran, liens qui montent en cascade + hover). L'ancien
 `initTwostepScalingNavigation` / `.twostep-nav__*` est retiré.
 
+### Titre de hero — apparition lettre par lettre après la transition
+`initHeroTitleReveal` traite les **`h1[data-split="heading"]`** ; les autres titres restent sur
+`initSplitHeadings` (apparition par lignes au scroll), dont le sélecteur exclut désormais
+`h1` — les deux modules partagent le marqueur `data-split-done`.
+
+**Pourquoi pas un ScrollTrigger.** Un h1 est toujours en haut de page : le trigger « top 80% »
+se déclenche immédiatement, donc pendant que le rideau de transition couvre encore l'écran. Le
+titre s'animait sans témoin. Le tween est donc créé **en pause** (l'état masqué est bien posé
+tout de suite, `immediateRender`) et joué sur le signal **`boreal:page-ready`**.
+
+**Le signal.** `firePageReady()` est appelé sur le label `pageReady` des trois timelines de
+transition (`once`, `enter`, et la variante reduced-motion) ; `onPageReady(fn)` s'y abonne, ou
+exécute immédiatement si le signal est **déjà** passé — selon le chemin (chargement initial
+`once` vs navigation SPA `afterEnter`), les modules s'initialisent tantôt avant, tantôt après
+la fin de la transition. Filet de 2.5s pour ne jamais laisser un titre invisible, et
+réarmement à `barba.hooks.before`. Un délai fixe aurait été plus court à écrire mais se
+désynchroniserait de la timeline à la première retouche des durées.
+
+**Le split.** `type: "chars,lines"` avec `mask: "lines"` : le masque est sur les LIGNES (une
+ligne = une fenêtre) et les CHARS montent à travers — masquer par caractère découperait chaque
+lettre dans sa propre boîte et casserait les jambages. La cascade est **bornée** :
+`stagger.amount = min(nbChars × 0.022, 0.9)` répartit une durée totale, donc un titre court
+garde son rythme et un titre long accélère (celui de T03, 70 caractères, mettait 2.1s à
+s'écrire en stagger fixe). `autoSplit` re-découpe au resize et au chargement des polices : une
+fois le titre apparu (`_heroRevealed`), il est laissé en place au lieu de rentrer à nouveau.
+
 ### Logo de la nav — réduction au scroll
 `initNavLogoShrink` (persistant, `initOnce`) pose `data-nav-shrink="true"` sur `<html>` passé
 **250px** de scroll, et le relâche en repassant sous **200px**. Deux seuils volontairement
