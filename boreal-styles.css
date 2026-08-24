@@ -185,6 +185,37 @@
 @media (prefers-reduced-motion: reduce) { .realisations_tilt { transform: none; } }
 
 
+/* ===== ÉQUIPE (T03) — nom/poste au survol, carte cliquable vers la pop-up =====
+   Structure Webflow : `.team2_item[data-modal-target]` > photo + `.description_team`
+   (nom + poste). Le clic est déjà géré par `initModalBasic` (délégation sur
+   `[data-modal-target]`), il n'y a donc rien à ajouter en JS : uniquement le survol ici.
+   ⚠️ Le masquage est enfermé dans `@media (hover: hover)` : sur tactile il n'y a pas de
+   survol, le nom ne s'afficherait JAMAIS et les cartes deviendraient quatre photos muettes.
+   Au doigt, tout reste visible en permanence. */
+.team2_item { cursor: pointer; }
+.team2_item .team2_image-wrapper { overflow: hidden; }
+.team2_item .team2_image { transition: transform 0.6s cubic-bezier(0.625, 0.05, 0, 1); }
+
+@media (hover: hover) {
+  .team2_item .description_team {
+    opacity: 0;
+    transform: translateY(0.5rem);
+    transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.625, 0.05, 0, 1);
+  }
+  .team2_item:hover .description_team,
+  .team2_item:focus-within .description_team {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .team2_item:hover .team2_image { transform: scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .team2_item .description_team,
+  .team2_item .team2_image { transition: none; }
+}
+
+
 /* ===== MODALES (Osmo basic modal B) — pop-ups secteurs ===== */
 [data-modal-group-status] { transition: all 0.2s linear; }
 [data-modal-group-status="active"] { opacity: 1; visibility: visible; }

@@ -352,6 +352,21 @@ Lenis scrolle réellement la page → `window.scrollY` et l'événement `scroll`
 besoin de s'abonner à Lenis. Notre feuille étant chargée **après** celle de Webflow, la règle
 l'emporte à spécificité égale.
 
+### Section Équipe (T03) — nom au survol + pop-up de bio
+Remplace un carrousel de plus (demande client : « trop de sortes de carrousels »). Quatre
+`.team2_item[data-modal-target="team1..4"]` : la photo seule au repos, **nom + poste
+(`.description_team`) au survol**, et la **bio complète en pop-up** au clic.
+
+**Aucun JS ajouté** : `initModalBasic` écoute déjà `[data-modal-target]` et les modales
+`data-modal-name="team1..4"` existent dans le groupe `[data-modal-group-status]` de la page.
+Le survol est purement CSS.
+
+⚠️ Le masquage de `.description_team` est enfermé dans **`@media (hover: hover)`**. Sans ce
+garde-fou, sur tactile — où le survol n'existe pas — le nom ne s'afficherait jamais et la
+section deviendrait quatre photos muettes. Au doigt, tout reste visible en permanence.
+`:focus-within` couvre la navigation au clavier, et l'image a un léger zoom au survol
+(`scale(1.04)`, masqué par `overflow: hidden` sur le wrapper).
+
 ### Boutons — liseré tournant (même recette que les cartes chiffres STATS26)
 Le bouton du design system est **`.btn-animate-chars`** (toutes les pages, y compris le bouton
 d'envoi des formulaires `.form-submit-btn.btn-animate-chars`) : une règle suffit à couvrir tout
