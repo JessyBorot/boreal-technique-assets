@@ -376,7 +376,7 @@ qu'une catégorie est sélectionnée. Le filtre ne notifiant rien, un `MutationO
 (`filter: grayscale(1)` + opacité). Sélecteur en `:has()` et non `.filter-list:hover` — survoler
 le *gap* entre deux cartes suffirait à décolorer toute la grille sans qu'aucune carte ne soit
 visée. En parallèle, voile sombre sur la carte visée et **titre qui monte au centre de l'image
-en grossissant** : `.project-info` passe en absolu pour que `bottom` soit animable (un changement
+en grossissant légèrement** (~1.3x ; au-delà, il bondit et écrase l'image au lieu de l'accompagner) : `.project-info` passe en absolu pour que `bottom` soit animable (un changement
 de `justify-content` ne se transitionne pas). L'alignement horizontal ne bouge pas, le recentrer
 ferait sauter le texte au premier pixel de survol. Le tout sous `@media (hover: hover)`.
 

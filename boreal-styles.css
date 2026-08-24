@@ -683,8 +683,10 @@
 }
 @media (hover: hover) {
   .demo-card:hover .info-realisation .project-info { bottom: 50%; transform: translateY(50%); }
+  /* Agrandissement volontairement léger (~1.3x le titre au repos, ~20px) : plus haut, le
+     titre bondissait et écrasait l'image au lieu de l'accompagner. */
   .demo-card:hover .info-realisation .project-info :is(h1, h2, h3, h4, h5, h6) {
-    font-size: clamp(1.5rem, 2.1vw, 2.25rem);
+    font-size: clamp(1.4rem, 1.8vw, 1.9rem);
   }
 }
 
