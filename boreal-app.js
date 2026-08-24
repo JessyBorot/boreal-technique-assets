@@ -2672,14 +2672,13 @@ function initTextApparition() {
 }
 
 // ---- TIMELINE PROGRESS (remplissage de la ligne au scroll) ----
-// Remplit la .timeline9_line (Relume) d'un dégradé bleu (dodger-blue) qui grandit du haut vers le
+// Remplit la .timeline9_line (Relume) d'une barre sombre qui grandit du haut vers le
 // bas en suivant le scroll — la barre injectée [data-timeline-fill] se fait scaler en Y (scrub) sur
 // la durée de traversée de .timeline9_progress. Non destructif : la barre de remplissage est créée
 // en JS par-dessus la ligne sombre existante. Barba-safe via gsap.context.
 let _timelineCtx;
 function initTimelineProgress() {
   if (_timelineCtx) _timelineCtx.revert();
-  const BLUE = "var(--_primitives---colors--dodger-blue)";
   _timelineCtx = gsap.context(() => {
     document.querySelectorAll(".timeline9_progress").forEach((progress) => {
       const line = progress.querySelector(".timeline9_line");
@@ -2690,8 +2689,9 @@ function initTimelineProgress() {
       if (!fill) {
         fill = document.createElement("div");
         fill.setAttribute("data-timeline-fill", "");
-        fill.style.cssText =
-          "position:absolute;inset:0;pointer-events:none;background:" + BLUE + ";";
+        // La COULEUR vit dans boreal-styles.css (`[data-timeline-fill]`) : un style inline
+        // l'emporterait sur la feuille et rendrait la teinte non réglable sans toucher au JS.
+        fill.style.cssText = "position:absolute;inset:0;pointer-events:none;";
         line.appendChild(fill);
       }
       if (reducedMotion) { gsap.set(fill, { scaleY: 1 }); return; }

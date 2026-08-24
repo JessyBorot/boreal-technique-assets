@@ -149,6 +149,18 @@
 }
 
 
+/* ===== TIMELINE — couleur du remplissage au scroll (À Propos T03, Réalisations T06) =====
+   `initTimelineProgress` injecte la barre `[data-timeline-fill]` ; sa COULEUR est ici, pas en
+   inline dans le JS, pour rester réglable sans retoucher le module.
+   Le remplissage est un noir INTERMÉDIAIRE, mesuré sur les deux fonds qui l'encadrent :
+     fond de section  #030405  (le plus sombre)
+     barre remplie    #0d1015  ← ici
+     rail au repos    #1b212a  (.timeline9_line, le plus clair)
+   La barre est donc plus sombre que le rail qu'elle recouvre, et plus claire que le fond
+   général : la progression se lit sans le bleu d'accent, plus sobre. */
+[data-timeline-fill] { background: var(--timeline-fill-color, #0d1015); }
+
+
 /* ===== LOGO WALL — ⚠️ pilote la LOGIQUE JS (isVisible) : ne pas retirer ===== */
 [data-logo-wall-list] [data-logo-wall-item]:nth-child(n+9) { display: none; }
 @media screen and (max-width: 991px) {

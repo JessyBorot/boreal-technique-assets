@@ -197,12 +197,25 @@ via `apparition-scale` (défaut 0.8). Barba-safe (`gsap.context` reverté à cha
 en `prefers-reduced-motion`. ⚠️ La section conteneur d'un left/right doit être en **`overflow: hidden`**
 (sinon `apparition="right"` peut créer un scroll horizontal). Attributs custom sans préfixe `data-` (voulu côté client).
 
-### Remplissage de la ligne timeline au scroll (page À Propos)
-`initTimelineProgress` : remplit la `.timeline9_line` (Relume) d'un bleu `var(--_primitives---colors--dodger-blue)`
-qui grandit du haut vers le bas en suivant le scroll. Non destructif : une barre `[data-timeline-fill]`
-est injectée en JS par-dessus la ligne sombre existante, puis scalée en Y (`scrub`, de `top center` à
-`bottom center` sur `.timeline9_progress`). Barba-safe (`gsap.context`) ; en `prefers-reduced-motion`
-la ligne est laissée pleine (bleu statique).
+### Remplissage de la ligne timeline au scroll (À Propos T03, Réalisations T06)
+`initTimelineProgress` injecte `[data-timeline-fill]` dans `.timeline9_line` et la scale en Y
+(scrub `top center` → `bottom center` sur `.timeline9_progress`). Non destructif : la barre est
+créée en JS par-dessus le rail existant. Les deux pages partagent les classes `.timeline9_*`,
+donc une seule règle les couvre.
+
+**Couleur (août 2026 — remplace le bleu d'accent).** Elle vit dans `boreal-styles.css`
+(`[data-timeline-fill]`), plus en inline dans le JS : un style inline l'emporterait sur la
+feuille et rendrait la teinte non réglable sans toucher au module. Valeur choisie à partir des
+deux fonds qui l'encadrent, mesurés sur la page :
+
+```
+fond de section  #030405   (le plus sombre)
+barre remplie    #0d1015   ← var(--timeline-fill-color)
+rail au repos    #1b212a   (.timeline9_line, le plus clair)
+```
+
+La barre est donc plus sombre que le rail qu'elle recouvre et plus claire que le fond général :
+la progression se lit sans le bleu, plus sobre.
 
 ### Gradient Wave Text au scroll (Osmo)
 `initGradientWaveText` : sur chaque `[data-gradient-wave-text]`, SplitText découpe le titre en caractères
