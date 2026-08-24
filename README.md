@@ -283,19 +283,23 @@ statut sur `[data-navigation-status]` (`active`/`not-active`), ESC ferme. Intèg
 (hamburger, tile clip-path plein écran, liens qui montent en cascade + hover). L'ancien
 `initTwostepScalingNavigation` / `.twostep-nav__*` est retiré.
 
-### Halo de section (flare blanc sur le fond noir) — Userback « trop de noir »
+### Halo de section (flare bleu sur le fond noir) — Userback « trop de noir »
 CSS seul (`boreal-styles.css`), aucun élément à créer : poser l'attribut
 `data-section-glow="bottom"` (ou `"top"`) sur une **section**. Un `::after` non cliquable
-dessine une ellipse blanche très diffuse, ancrée au bas (ou au haut) de la section et
-volontairement plus large qu'elle pour n'avoir aucun bord visible. Les enfants directs de la
-section repassent au-dessus (`position: relative; z-index: 1`) — pas d'`overflow: hidden`, qui
-couperait les cartes du slider radial.
+dessine une ellipse très diffuse au bleu d'accent du site, ancrée au bas (ou au haut) de la
+section et volontairement plus large qu'elle pour n'avoir aucun bord visible. Les enfants
+directs de la section repassent au-dessus (`position: relative; z-index: 1`) — pas
+d'`overflow: hidden`, qui couperait les cartes du slider radial.
+
+La couleur passe par `color-mix()` sur le **token** `--_primitives---colors--dodger-blue`
+(fallback `#1e90ff`) : un seul point de vérité pour le bleu, pas de hex dupliqué.
 
 Réglages, en surcharge sur la section (variables CSS) :
 ```
---glow-opacity : intensité du blanc au centre (défaut 0.14 — rester très bas sur fond noir)
---glow-height  : hauteur du flare (défaut clamp(14rem, 34vh, 26rem))
---glow-width   : largeur de l'ellipse (défaut min(120rem, 150%))
+--glow-color   : couleur du flare (défaut = dodger-blue du design system)
+--glow-opacity : intensité au centre (défaut 0.15 — rester bas sur fond noir)
+--glow-height  : hauteur du flare (défaut clamp(22rem, 55vh, 44rem))
+--glow-width   : largeur de l'ellipse (défaut min(180rem, 220%))
 ```
 Posé sur : **Accueil (T01)**, section « Spécialisations » (celle qui contient le titre + le
 radial cards slider). ⚠️ Invisible dans le canvas Designer — juger sur l'URL publiée.

@@ -556,20 +556,24 @@
 [data-career-status="active"] .career14_toggle-icon { transform: translateY(0.1em) rotate(-135deg); }
 
 
-/* ===== HALO DE SECTION (flare blanc) — casse le tout-noir du fond =====
+/* ===== HALO DE SECTION (flare bleu) — casse le tout-noir du fond =====
    Posé via l'attribut `data-section-glow="bottom"` sur une SECTION (aucun élément à créer dans
    Webflow). Le halo est un ::after non cliquable, ancré au bas de la section et débordant
    volontairement de la largeur pour que l'ellipse n'ait pas de bord visible.
+   Couleur = le bleu d'accent du site (token Webflow), mélangé à du transparent via color-mix
+   → on garde UN seul point de vérité pour le bleu, pas de hex dupliqué ici.
    Réglages par section (surcharge inline ou par classe) :
-     --glow-opacity : intensité du blanc au centre (0.14 par défaut — rester très bas sur fond noir)
+     --glow-color   : couleur du flare (défaut = dodger-blue du design system)
+     --glow-opacity : intensité au centre (0.15 par défaut — rester bas sur fond noir)
      --glow-height  : hauteur du flare
      --glow-width   : largeur de l'ellipse
    ⚠️ Le custom code ne s'exécute PAS dans le canvas Designer → juger le rendu sur l'URL PUBLIÉE. */
 [data-section-glow] {
   position: relative;
-  --glow-opacity: 0.14;
-  --glow-height: clamp(14rem, 34vh, 26rem);
-  --glow-width: min(120rem, 150%);
+  --glow-color: var(--_primitives---colors--dodger-blue, #1e90ff);
+  --glow-opacity: 0.15;
+  --glow-height: clamp(22rem, 55vh, 44rem);
+  --glow-width: min(180rem, 220%);
 }
 /* Les enfants directs repassent au-dessus du halo (le ::after est à z-index 0). */
 [data-section-glow] > * { position: relative; z-index: 1; }
@@ -584,14 +588,14 @@
   pointer-events: none;
   z-index: 0;
   background: radial-gradient(ellipse 50% 100% at 50% 100%,
-    rgba(255, 255, 255, var(--glow-opacity)) 0%,
-    rgba(255, 255, 255, calc(var(--glow-opacity) * 0.45)) 32%,
-    rgba(255, 255, 255, calc(var(--glow-opacity) * 0.12)) 58%,
-    rgba(255, 255, 255, 0) 78%);
+    color-mix(in srgb, var(--glow-color) calc(var(--glow-opacity) * 100%), transparent) 0%,
+    color-mix(in srgb, var(--glow-color) calc(var(--glow-opacity) * 48%), transparent) 34%,
+    color-mix(in srgb, var(--glow-color) calc(var(--glow-opacity) * 16%), transparent) 60%,
+    transparent 80%);
 }
 [data-section-glow="bottom"]::after { bottom: 0; }
 [data-section-glow="top"]::after { top: 0; transform: translateX(-50%) rotate(180deg); }
 
 @media screen and (max-width: 767px) {
-  [data-section-glow] { --glow-opacity: 0.11; --glow-height: clamp(10rem, 26vh, 16rem); --glow-width: 180%; }
+  [data-section-glow] { --glow-opacity: 0.13; --glow-height: clamp(16rem, 40vh, 26rem); --glow-width: 260%; }
 }
