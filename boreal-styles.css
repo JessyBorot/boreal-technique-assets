@@ -319,13 +319,18 @@
 
 
 /* ===== SERVICES — layout RANGÉE pleine largeur (V2, Userback #8034497) =====
-   4 cartes côte-à-côte quasi bord-à-bord, espace normal (PAS de chevauchement), 2 (tablette), 1 (mobile).
-   Angle par carte + montée/descente au scroll = boreal-app.js.
+   N cartes côte-à-côte quasi bord-à-bord, espace normal (PAS de chevauchement), 2 (tablette), 1 (mobile).
+   Angle par carte + montée/descente au scroll = boreal-app.js (angles calculés selon le NOMBRE de cartes).
+   Le padding latéral du container n'est pas décoratif : une carte inclinée déborde de sa boîte
+   d'environ (hauteur × sin(angle)) / 2 — sans cette réserve, les cartes de bout sont rognées par
+   le bord de l'écran.
    NB : le custom code ne s'exécute PAS dans le canvas Designer → juger sur l'URL publiée. */
-.cards-stack .container { max-width: none; padding-left: clamp(0.4rem, 1vw, 1rem); padding-right: clamp(0.4rem, 1vw, 1rem); }
-.cards-stack__list { flex-direction: row !important; flex-wrap: nowrap; align-items: stretch; justify-content: center; gap: clamp(0.75rem, 1.1vw, 1.25rem) !important; }
+.cards-stack .container { max-width: none; padding-left: clamp(1.25rem, 2.5vw, 2.5rem); padding-right: clamp(1.25rem, 2.5vw, 2.5rem); }
+.cards-stack__list { flex-direction: row !important; flex-wrap: nowrap; align-items: stretch; justify-content: center; gap: clamp(0.9rem, 1.4vw, 1.6rem) !important; }
 .cards-stack__item { flex: 1 1 0 !important; width: auto !important; min-width: 0; display: flex; }
 .cards-stack__item .cards-stack-card { width: 100%; height: 100%; transform-origin: 50% 100%; }
+/* Titre fluide : à 5 cartes par rangée, le h3 du style guide déborde de la carte. */
+.cards-stack-card .heading-style-h3 { font-size: clamp(1.5rem, 2vw, 2.25rem); overflow-wrap: break-word; }
 @media screen and (max-width: 991px) {
   .cards-stack__list { flex-wrap: wrap !important; }
   .cards-stack__item { flex: 1 1 46% !important; }

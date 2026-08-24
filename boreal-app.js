@@ -849,7 +849,17 @@ function initBackgroundZoom() {
 function initStackingStickyCardsBounce() {
   const sections = document.querySelectorAll("[data-stacking-cards-init]");
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const angles = [-6, -2.5, 2.5, 6]; // angle de repos, un peu différent par carte
+  // Angles de repos calculés à partir du NOMBRE de cartes, jamais lus dans une liste figée :
+  // une liste de 4 valeurs relancée en modulo donnait à la 5e carte l'angle de la 1re (-6°),
+  // donc deux cartes voisines penchées l'une VERS l'autre, qui se chevauchent.
+  // Éventail symétrique (la carte du milieu est droite quand le nombre est impair) et
+  // amplitude qui diminue quand les cartes se multiplient : plus elles sont étroites,
+  // plus une forte inclinaison mange la largeur du voisin.
+  function restAngles(n) {
+    if (n < 2) return [0];
+    const max = Math.min(6, 24 / n); // 4 cartes → 6° ; 5 → 4.8° ; 6 → 4°
+    return Array.from({ length: n }, (_, i) => max * ((2 * i) / (n - 1) - 1));
+  }
 
   sections.forEach((section) => {
     // Barba / ré-entrée : nettoyer les triggers + tweens de CETTE section
@@ -859,7 +869,8 @@ function initStackingStickyCardsBounce() {
     if (!targets.length) return;
 
     // angle statique (les cartes restent inclinées ; le chevauchement est en CSS)
-    gsap.set(targets, { rotate: (i) => angles[i % angles.length], transformOrigin: "50% 100%" });
+    const angles = restAngles(targets.length);
+    gsap.set(targets, { rotate: (i) => angles[i], transformOrigin: "50% 100%" });
 
     if (reduce) { gsap.set(targets, { y: 0, autoAlpha: 1 }); return; }
 

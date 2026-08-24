@@ -22,16 +22,29 @@ Auparavant `--_primitives---colors--sunshade` (jaune/orange), retiré de la DA V
 Le token est défini dans Webflow (variables du site), pas dans ce fichier.
 
 ### Section Services — rangée pleine largeur (V2 — Userback #8034497)
-`initStackingStickyCardsBounce` : les 4 cartes `[data-stacking-card]` d'une section
+`initStackingStickyCardsBounce` : les cartes `[data-stacking-card]` d'une section
 `[data-stacking-cards-init]` **montent/descendent PILOTÉES PAR LE SCROLL** (`scrub:true`,
-staggerées), chacune à un **angle de repos différent** (`[-6,-2.5,2.5,6]°`), + **bounce**
-(`pulseElement`) quand chaque carte atteint sa position. Le layout **rangée côte-à-côte pleine
-largeur, sans chevauchement** (4 → 2 → 1 col) est dans `boreal-styles.css` (`.cards-stack__list`
-en `flex-direction:row` + gap normal, `.cards-stack__item` en `flex:1 1 0`, container
-full-bleed). ⚠️ Le custom code ne tourne pas dans le canvas Designer → juger le rendu sur
-l'**URL publiée**. Le **liseré coloré rotatif** (`conic-gradient` par carte) autour de ces box a été
-**retiré** (Userback) : les cartes sont désormais sans contour. Le keyframe `brd-spin` reste utilisé
-par les cartes chiffres STATS26 (pages service).
+staggerées), chacune à un **angle de repos différent**, + **bounce** (`pulseElement`) quand chaque
+carte atteint sa position. Le layout **rangée côte-à-côte pleine largeur, sans chevauchement**
+(N → 2 → 1 col) est dans `boreal-styles.css` (`.cards-stack__list` en `flex-direction:row` + gap
+normal, `.cards-stack__item` en `flex:1 1 0`, container full-bleed).
+
+**Angles (corrigé — 5e service ajouté, août 2026).** Ils sont **calculés à partir du nombre de
+cartes**, plus lus dans une liste figée : `restAngles(n)` renvoie un éventail symétrique
+(`max × (2i/(n-1) − 1)`, carte du milieu droite si n est impair) dont l'amplitude décroît avec le
+nombre (`max = min(6, 24/n)` → 6° à 4 cartes, 4.8° à 5). L'ancienne liste `[-6,-2.5,2.5,6]`
+relancée en modulo donnait à la 5e carte l'angle de la 1re : deux voisines penchées **l'une vers
+l'autre**, qui se chevauchaient (titre « Installations permanentes » passé dessous).
+
+Deux corollaires CSS : le **padding latéral** du container doit couvrir le débordement d'une carte
+inclinée (≈ hauteur × sin(angle) / 2), sinon les cartes de bout sont rognées par le bord de
+l'écran ; et le **titre** passe en `font-size` fluide, le h3 du style guide débordant de la carte
+à 5 colonnes.
+
+⚠️ Le custom code ne tourne pas dans le canvas Designer → juger le rendu sur l'**URL publiée**.
+Le **liseré coloré rotatif** (`conic-gradient` par carte) autour de ces box a été **retiré**
+(Userback) : les cartes sont désormais sans contour. Le keyframe `brd-spin` reste utilisé par les
+cartes chiffres STATS26 (pages service).
 
 ### Section Types d'événements — radial cards slider (Osmo/GSAP, remplace depth-tiles)
 `initRadialCardsSlider` : slider en **roue radiale** (composant Osmo « Radial Cards Slider GSAP »)
