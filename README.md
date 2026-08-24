@@ -296,6 +296,25 @@ statut sur `[data-navigation-status]` (`active`/`not-active`), ESC ferme. Intèg
 (hamburger, tile clip-path plein écran, liens qui montent en cascade + hover). L'ancien
 `initTwostepScalingNavigation` / `.twostep-nav__*` est retiré.
 
+### Boutons — liseré tournant (même recette que les cartes chiffres STATS26)
+Le bouton du design system est **`.btn-animate-chars`** (toutes les pages, y compris le bouton
+d'envoi des formulaires `.form-submit-btn.btn-animate-chars`) : une règle suffit à couvrir tout
+le site. Fond et couleur de texte restent gérés dans Webflow ; `boreal-styles.css` n'ajoute que
+le contour animé (`::before` + `conic-gradient` masqué en XOR + `brd-spin`).
+
+Deux points d'accroche :
+- le rayon suit celui du **fond** (`.btn-animate-chars__bg`, `radius--small`), pas celui du
+  bouton (`0.25em`) — c'est le fond qu'on voit, donc c'est lui qu'on épouse ;
+- au hover le fond se rétracte (`inset: 0.125em`) pendant que le liseré reste au bord : le
+  contour ne bouge pas, le fond respire à l'intérieur.
+
+Réglages : `--btn-brd-color` (défaut dodger-blue), `--btn-brd-speed` (4.5s), `--btn-brd-thickness`
+(1.6px). Préfixe `--btn-*` volontaire : un `--c` générique serait hérité par/depuis les autres
+modules à liseré. `prefers-reduced-motion` retombe sur une trace fixe, comme STATS26.
+
+Non couverts (nomenclatures différentes, à décider) : `.filter-btn` / `.reset-btn` (T04, T06),
+`.centered-slider-button` (flèches rondes), et les résidus Relume `.button-7` / `.button-8`.
+
 ### Halo de section (flare bleu sur le fond noir) — Userback « trop de noir »
 CSS seul (`boreal-styles.css`), aucun élément à créer. Un `::after` non cliquable dessine une
 ellipse très diffuse au bleu d'accent, ancrée au bas de la section et volontairement plus large
