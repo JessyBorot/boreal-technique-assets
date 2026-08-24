@@ -284,11 +284,16 @@ statut sur `[data-navigation-status]` (`active`/`not-active`), ESC ferme. Intèg
 `initTwostepScalingNavigation` / `.twostep-nav__*` est retiré.
 
 ### Halo de section (flare bleu sur le fond noir) — Userback « trop de noir »
-CSS seul (`boreal-styles.css`), aucun élément à créer : poser l'attribut
-`data-section-glow="bottom"` (ou `"top"`) sur une **section**. Un `::after` non cliquable
-dessine une ellipse très diffuse au bleu d'accent du site, ancrée au bas (ou au haut) de la
-section et volontairement plus large qu'elle pour n'avoir aucun bord visible. Les enfants
-directs de la section repassent au-dessus (`position: relative; z-index: 1`) — pas
+CSS seul (`boreal-styles.css`), aucun élément à créer. Un `::after` non cliquable dessine une
+ellipse très diffuse au bleu d'accent, ancrée au bas de la section et volontairement plus large
+qu'elle pour n'avoir aucun bord visible.
+
+Deux déclencheurs :
+- **`.radial-section`** — automatique : **toute** section de radial cards slider a son halo, sur
+  toutes les pages, sans rien poser dans le Designer.
+- **`data-section-glow="bottom"` / `"top"`** — à poser sur n'importe quelle autre section.
+
+Les enfants directs repassent au-dessus (`position: relative; z-index: 1`) — pas
 d'`overflow: hidden`, qui couperait les cartes du slider radial.
 
 La couleur passe par `color-mix()` sur le **token** `--_primitives---colors--dodger-blue`
@@ -301,8 +306,7 @@ Réglages, en surcharge sur la section (variables CSS) :
 --glow-height  : hauteur du flare (défaut clamp(22rem, 55vh, 44rem))
 --glow-width   : largeur de l'ellipse (défaut min(180rem, 220%))
 ```
-Posé sur : **Accueil (T01)**, section « Spécialisations » (celle qui contient le titre + le
-radial cards slider). ⚠️ Invisible dans le canvas Designer — juger sur l'URL publiée.
+⚠️ Invisible dans le canvas Designer — juger sur l'URL publiée.
 
 ## URLs CDN (jsDelivr)
 ```

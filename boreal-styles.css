@@ -557,8 +557,11 @@
 
 
 /* ===== HALO DE SECTION (flare bleu) — casse le tout-noir du fond =====
-   Posé via l'attribut `data-section-glow="bottom"` sur une SECTION (aucun élément à créer dans
-   Webflow). Le halo est un ::after non cliquable, ancré au bas de la section et débordant
+   Deux façons de l'obtenir, mêmes réglages :
+     1. AUTOMATIQUE sur `.radial-section` — toute section de radial cards slider a son halo,
+        sur toutes les pages, sans rien poser dans le Designer.
+     2. À LA DEMANDE ailleurs : attribut `data-section-glow="bottom"` (ou `"top"`) sur une section.
+   Le halo est un ::after non cliquable, ancré au bas (ou au haut) de la section et débordant
    volontairement de la largeur pour que l'ellipse n'ait pas de bord visible.
    Couleur = le bleu d'accent du site (token Webflow), mélangé à du transparent via color-mix
    → on garde UN seul point de vérité pour le bleu, pas de hex dupliqué ici.
@@ -568,7 +571,7 @@
      --glow-height  : hauteur du flare
      --glow-width   : largeur de l'ellipse
    ⚠️ Le custom code ne s'exécute PAS dans le canvas Designer → juger le rendu sur l'URL PUBLIÉE. */
-[data-section-glow] {
+:is([data-section-glow], .radial-section) {
   position: relative;
   --glow-color: var(--_primitives---colors--dodger-blue, #1e90ff);
   --glow-opacity: 0.15;
@@ -576,12 +579,13 @@
   --glow-width: min(180rem, 220%);
 }
 /* Les enfants directs repassent au-dessus du halo (le ::after est à z-index 0). */
-[data-section-glow] > * { position: relative; z-index: 1; }
+:is([data-section-glow], .radial-section) > * { position: relative; z-index: 1; }
 
-[data-section-glow]::after {
+:is([data-section-glow], .radial-section)::after {
   content: "";
   position: absolute;
   left: 50%;
+  bottom: 0;
   width: var(--glow-width);
   height: var(--glow-height);
   transform: translateX(-50%);
@@ -593,9 +597,11 @@
     color-mix(in srgb, var(--glow-color) calc(var(--glow-opacity) * 16%), transparent) 60%,
     transparent 80%);
 }
-[data-section-glow="bottom"]::after { bottom: 0; }
-[data-section-glow="top"]::after { top: 0; transform: translateX(-50%) rotate(180deg); }
+/* Variante haut de section (attribut uniquement). */
+[data-section-glow="top"]::after { top: 0; bottom: auto; transform: translateX(-50%) rotate(180deg); }
 
 @media screen and (max-width: 767px) {
-  [data-section-glow] { --glow-opacity: 0.13; --glow-height: clamp(16rem, 40vh, 26rem); --glow-width: 260%; }
+  :is([data-section-glow], .radial-section) {
+    --glow-opacity: 0.13; --glow-height: clamp(16rem, 40vh, 26rem); --glow-width: 260%;
+  }
 }
