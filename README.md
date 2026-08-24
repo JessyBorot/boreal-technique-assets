@@ -352,6 +352,37 @@ Lenis scrolle réellement la page → `window.scrollY` et l'événement `scroll`
 besoin de s'abonner à Lenis. Notre feuille étant chargée **après** celle de Webflow, la règle
 l'emporte à spécificité égale.
 
+### Grille des Réalisations (T06) — 3 colonnes, 16:9, mises en avant, survol
+Passage de la liste flex-wrap en **grid 3 colonnes** avec des cartes **16:9** (2 colonnes sous
+991px, 1 sous 767px).
+
+**Mises en avant (`initFeaturedGrid`).** Une carte marquée `data-grid-size="large"` occupe
+2 colonnes × 2 rangées ; `grid-auto-flow: dense` recolle les petites dans les trous. La grande
+carte perd son `aspect-ratio` et prend la hauteur de sa cellule — garder 16:9 sur 2×2 donnerait
+une hauteur légèrement différente de deux rangées + gap.
+
+Le problème de fond : la grille vient d'une Collection List, le même bloc est répété, on ne peut
+donc pas désigner une carte dans le Designer. Deux entrées :
+1. **explicite** — `data-realisation-size="large"` sur l'item, prioritaire ; c'est là qu'un
+   champ CMS (switch « Mise en avant ») viendra se brancher ;
+2. **par rythme** — à défaut, une grande toutes les `FEATURE_EVERY` (5) cartes.
+
+⚠️ Le rythme est calculé sur les cartes **visibles**, pas sur toutes. Un `nth-child` CSS
+compterait aussi les cartes masquées par le filtre et la mise en page partirait de travers dès
+qu'une catégorie est sélectionnée. Le filtre ne notifiant rien, un `MutationObserver` sur
+`data-filter-status` déclenche le recalcul.
+
+**Survol.** La carte visée garde ses couleurs, **toutes les autres passent en noir et blanc**
+(`filter: grayscale(1)` + opacité). Sélecteur en `:has()` et non `.filter-list:hover` — survoler
+le *gap* entre deux cartes suffirait à décolorer toute la grille sans qu'aucune carte ne soit
+visée. En parallèle, voile sombre sur la carte visée et **titre qui monte au centre de l'image
+en grossissant** : `.project-info` passe en absolu pour que `bottom` soit animable (un changement
+de `justify-content` ne se transitionne pas). L'alignement horizontal ne bouge pas, le recentrer
+ferait sauter le texte au premier pixel de survol. Le tout sous `@media (hover: hover)`.
+
+**Pastille Instagram.** `.realisation-instagram` — lien rond en bas à droite de la carte, SVG en
+`currentColor`, fond flouté, bleu d'accent au survol. Posée sur 2 des 8 cartes en exemple.
+
 ### Section Équipe (T03) — nom au survol + pop-up de bio
 Remplace un carrousel de plus (demande client : « trop de sortes de carrousels »). Quatre
 `.team2_item[data-modal-target="team1..4"]` : la photo seule au repos, **nom + poste

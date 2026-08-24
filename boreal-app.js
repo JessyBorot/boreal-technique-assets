@@ -93,6 +93,7 @@ function runPageModulesOnce(container) {
     initGradientWaveText,      // titres révélés en vague de couleur au scroll ([data-gradient-wave-text] — Osmo)
     init3dImageCarousel,       // carrousel cylindrique 3D drag/scroll ([data-3d-carousel-wrap] — Osmo, page À Propos)
     initMultiFilter,           // filtre multi-match CMS ([data-filter-group] — Osmo, page Réalisations T06)
+    initFeaturedGrid,          // grille T06 : quelles réalisations sont mises en avant (2x2)
     initCareerJobToggle,       // offres d'emploi repliées + « Voir plus » (.career14_item — page Carrières T10)
     initHeroTitleReveal,     // h1 de hero : lettre par lettre, joué à la fin de la transition
     initSplitHeadings,
@@ -2786,6 +2787,48 @@ function initGradientWaveText() {
       }
     });
     _gradientWaveSplits.push(split);
+  });
+}
+
+// ---- GRILLE DES RÉALISATIONS (T06) : quelles cartes sont mises en avant ----
+// La grille vient d'une Collection List : le même bloc est répété, on ne peut donc pas
+// décider carte par carte dans le Designer. Deux façons de désigner une grande carte :
+//   1. explicitement, via `data-realisation-size="large"` sur l'item — c'est là-dessus qu'un
+//      champ CMS (switch « Mise en avant ») viendra se brancher, et il a toujours priorité ;
+//   2. à défaut, par un RYTHME : une grande toutes les FEATURE_EVERY cartes.
+// Le rythme est calculé sur les cartes VISIBLES, pas sur toutes : un simple `nth-child` CSS
+// compterait aussi les cartes masquées par le filtre et la mise en page partirait de travers
+// dès qu'une catégorie est sélectionnée. D'où le recalcul à chaque changement de filtre.
+let _featuredGridObservers = [];
+function initFeaturedGrid() {
+  _featuredGridObservers.forEach((o) => o.disconnect());
+  _featuredGridObservers = [];
+
+  const FEATURE_EVERY = 5;
+
+  document.querySelectorAll(".filter-list").forEach((list) => {
+    const layout = () => {
+      const items = Array.from(list.querySelectorAll(".filter-list__item"));
+      let rank = 0; // rang parmi les cartes VISIBLES
+      items.forEach((item) => {
+        const explicit = item.getAttribute("data-realisation-size");
+        if (explicit) { item.setAttribute("data-grid-size", explicit); return; }
+        if (item.getAttribute("data-filter-status") === "not-active") {
+          item.removeAttribute("data-grid-size");
+          return;
+        }
+        if (rank % FEATURE_EVERY === 0) item.setAttribute("data-grid-size", "large");
+        else item.removeAttribute("data-grid-size");
+        rank++;
+      });
+    };
+
+    layout();
+
+    // Le filtre ne notifie rien : on observe l'attribut qu'il écrit sur les items.
+    const obs = new MutationObserver(layout);
+    obs.observe(list, { attributes: true, subtree: true, attributeFilter: ["data-filter-status"] });
+    _featuredGridObservers.push(obs);
   });
 }
 

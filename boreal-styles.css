@@ -630,6 +630,93 @@
   position: absolute;
 }
 
+/* ===== GRILLE DES RÉALISATIONS (T06) — 3 colonnes, 16:9, mises en avant, survol =====
+   La liste était en flex-wrap avec des cartes portrait. Passage en GRID 3 colonnes et
+   cartes 16:9 (le contenu photo s'y prête mieux que le portrait).
+
+   Mise en avant : `data-grid-size="large"` (posé par initFeaturedGrid, ou par un futur champ
+   CMS) fait occuper 2 colonnes × 2 rangées. `grid-auto-flow: dense` recolle les petites cartes
+   dans les trous laissés par une grande, sinon la grille se troue à chaque mise en avant.
+   La grande carte perd son `aspect-ratio` et prend la hauteur de sa cellule : garder 16:9 sur
+   2×2 donnerait une hauteur légèrement différente de deux rangées + gap, donc un décalage.
+
+   Le filtre passe les items masqués en `position: absolute` (voir plus bas) : ils sortent du
+   flux et ne réservent aucune cellule — la grille reste compacte quand on filtre. */
+.filter-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-flow: dense;
+  gap: clamp(0.75rem, 1.5vw, 1.5rem);
+}
+.filter-list__item { width: auto; max-width: none; margin: 0; }
+.filter-list__item .demo-card { width: 100%; height: 100%; aspect-ratio: 16 / 9; }
+.filter-list__item .cover-image { width: 100%; height: 100%; object-fit: cover; }
+
+.filter-list__item[data-grid-size="large"] { grid-column: span 2; grid-row: span 2; }
+.filter-list__item[data-grid-size="large"] .demo-card { aspect-ratio: auto; }
+
+/* Survol : la carte visée garde ses couleurs, les autres passent en noir et blanc.
+   `:has()` plutôt que `.filter-list:hover` — survoler le GAP entre deux cartes suffirait à
+   décolorer toute la grille sans qu'aucune carte ne soit visée. */
+.demo-card { transition: filter 0.5s ease, opacity 0.5s ease; }
+@media (hover: hover) {
+  .filter-list:has(.filter-list__item:hover) .filter-list__item:not(:hover) .demo-card {
+    filter: grayscale(1);
+    opacity: 0.55;
+  }
+}
+
+/* Survol : voile sombre + le titre monte au centre de l'image en grossissant.
+   `.project-info` passe en absolu pour que `bottom` soit animable (un changement de
+   `justify-content` ne se transitionne pas). L'alignement horizontal ne bouge pas : le
+   recentrer ferait sauter le texte au premier pixel de survol. */
+.info-realisation { --card-pad: 1.5rem; transition: background-color 0.5s ease; }
+.demo-card:hover .info-realisation { background-color: rgba(3, 4, 5, 0.5); }
+
+.info-realisation .project-info {
+  position: absolute;
+  left: var(--card-pad); right: var(--card-pad); bottom: var(--card-pad);
+  transition: bottom 0.55s cubic-bezier(0.625, 0.05, 0, 1), transform 0.55s cubic-bezier(0.625, 0.05, 0, 1);
+}
+.info-realisation .project-info :is(h1, h2, h3, h4, h5, h6) {
+  transition: font-size 0.55s cubic-bezier(0.625, 0.05, 0, 1);
+}
+@media (hover: hover) {
+  .demo-card:hover .info-realisation .project-info { bottom: 50%; transform: translateY(50%); }
+  .demo-card:hover .info-realisation .project-info :is(h1, h2, h3, h4, h5, h6) {
+    font-size: clamp(1.5rem, 2.1vw, 2.25rem);
+  }
+}
+
+/* Pastille Instagram (posée sur les réalisations qui ont une publication liée). */
+.realisation-instagram {
+  position: absolute;
+  right: var(--card-pad, 1.5rem); bottom: var(--card-pad, 1.5rem);
+  z-index: 2;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2.25rem; height: 2.25rem;
+  border-radius: 999px;
+  color: var(--_primitives---colors--white, #fff);
+  background: rgba(3, 4, 5, 0.55);
+  backdrop-filter: blur(6px);
+  transition: background-color 0.35s ease, transform 0.35s cubic-bezier(0.625, 0.05, 0, 1);
+}
+.realisation-instagram:hover { background: var(--_primitives---colors--dodger-blue); transform: scale(1.08); }
+.realisation-instagram svg { width: 1.15rem; height: 1.15rem; display: block; }
+
+@media screen and (max-width: 991px) {
+  .filter-list { grid-template-columns: repeat(2, 1fr); }
+  /* En 2 colonnes une mise en avant prend toute la largeur, mais sur UNE rangée : deux
+     rangées de haut sur un écran étroit mangerait tout l'écran. */
+  .filter-list__item[data-grid-size="large"] { grid-column: span 2; grid-row: span 1; }
+  .filter-list__item[data-grid-size="large"] .demo-card { aspect-ratio: 16 / 9; }
+}
+@media screen and (max-width: 767px) {
+  .filter-list { grid-template-columns: 1fr; }
+  .filter-list__item[data-grid-size="large"] { grid-column: span 1; }
+}
+
+
 /* ===== CARRIÈRES (T10) — offres repliées + bouton « Voir plus » =====
    Le JS (initCareerJobToggle) déplace le corps de l'offre dans .career14_details et
    injecte .career14_toggle. Ici : uniquement l'habillage du bouton et le repli. */
