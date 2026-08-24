@@ -8,7 +8,7 @@ Fichiers statiques (JS/CSS) servis en CDN via **jsDelivr** pour le site Webflow
   hero bg-zoom, stacking cards, **radial cards slider** (Osmo/GSAP Draggable), odometer,
   logo wall, panorama 3D réalisations, offres d'emploi repliées (T10), footer
   parallax, parallax image layers (hero Réalisation T07), mini showreel player (Flip, T07),
-  layered image slider (Observer/CustomEase, T07), lecteur vidéo HLS Bunny (hls.js, T07),
+  lecteur vidéo HLS Bunny (hls.js, T07),
   panneau formulaire underlay,
   **validation formulaire live** Osmo) + le harnais
   Barba/Lenis/transitions de page. Chargé dans le **footer** Webflow.
