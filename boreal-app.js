@@ -92,7 +92,7 @@ function runPageModulesOnce(container) {
     initTimelineProgress,      // remplissage bleu de la ligne timeline au scroll (.timeline9_line — page À Propos)
     initGradientWaveText,      // titres révélés en vague de couleur au scroll ([data-gradient-wave-text] — Osmo)
     init3dImageCarousel,       // carrousel cylindrique 3D drag/scroll ([data-3d-carousel-wrap] — Osmo, page À Propos)
-    initMultiFilter,           // filtre multi-match CMS ([data-filter-group] — Osmo, page Réalisations T06)
+    initMultiFilter,           // filtre multi-match ([data-filter-group] — Osmo, T06 Réalisations + T04 Blogue en mode libellé CMS)
     initFeaturedGrid,          // grille T06 : quelles réalisations sont mises en avant (2x2)
     initCareerJobToggle,       // offres d'emploi repliées + « Voir plus » (.career14_item — page Carrières T10)
     initHeroTitleReveal,     // h1 de hero : lettre par lettre, joué à la fin de la transition
@@ -2853,6 +2853,11 @@ function initFeaturedGrid() {
 // data-filter-target-match (sélection) et data-filter-name-match (AND/OR). Le module ne fait que poser
 // data-filter-status (active | not-active | transition-out) + aria — toute l'anim est en CSS.
 // Barba-safe : le listener vit sur le groupe (dans le container remplacé par Barba) ; garde anti-double-bind.
+function filterSlug(s) {
+  return (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
 function initMultiFilter() {
   const transitionDelay = 300;
   document.querySelectorAll("[data-filter-group]").forEach((group) => {
@@ -2861,6 +2866,20 @@ function initMultiFilter() {
 
     const targetMatch = (group.getAttribute("data-filter-target-match") || "multi").trim().toLowerCase();
     const nameMatch = (group.getAttribute("data-filter-name-match") || "multi").trim().toLowerCase();
+
+    // Mode « libellé » (listes CMS) : un attribut ne peut pas être lié à un champ CMS dans Webflow.
+    // Bouton data-filter-target="label" → jeton = son texte rendu ; item → jetons = textes de ses
+    // [data-filter-label]. Chip et carte affichent le même champ (Nom de la catégorie) : elles
+    // correspondent par construction, en FR comme en EN, et un renommage met les deux à jour.
+    group.querySelectorAll('[data-filter-target="label"]').forEach((btn) => {
+      btn.setAttribute("data-filter-target", filterSlug(btn.textContent));
+    });
+    group.querySelectorAll("[data-filter-name]").forEach((item) => {
+      const labels = item.querySelectorAll("[data-filter-label]");
+      if (!labels.length) return;
+      const tokens = [...new Set([...labels].map((l) => filterSlug(l.textContent)).filter(Boolean))];
+      item.setAttribute("data-filter-name", tokens.join(" "));
+    });
 
     const buttons = [...group.querySelectorAll("[data-filter-target]")];
     const items = [...group.querySelectorAll("[data-filter-name]")];
@@ -2960,6 +2979,14 @@ function initMultiFilter() {
     group.addEventListener("click", (e) => {
       const btn = e.target.closest("[data-filter-target]");
       if (btn && group.contains(btn)) paint(btn.getAttribute("data-filter-target"));
+    });
+    // Chips CMS : ce sont des div (role="button"), pas des <button> → clavier géré ici.
+    group.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const btn = e.target.closest('[data-filter-target][role="button"]');
+      if (!btn || !group.contains(btn)) return;
+      e.preventDefault();
+      paint(btn.getAttribute("data-filter-target"));
     });
 
     paint("all");

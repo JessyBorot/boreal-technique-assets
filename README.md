@@ -227,7 +227,7 @@ Requiert **SplitText** (chargé + registré dans le head). Barba-safe : registre
 chaque ré-init (le revert du SplitText tue aussi le contexte GSAP + ScrollTrigger). Désactivé en
 `prefers-reduced-motion` (titre laissé à sa couleur de repos). Utilisé sur les titres Mission / Vision (À Propos).
 
-### Filtre multi-match (Osmo) — page Réalisations (T06)
+### Filtre multi-match (Osmo) — Réalisations (T06) et Blogue (T04)
 `initMultiFilter` : chaque `[data-filter-group]` pilote des boutons `[data-filter-target]` (valeurs `all`,
 `reset`, ou un tag) et des items `[data-filter-name]` (tokens séparés par espace ; ou collectés depuis des
 enfants `[data-filter-name-collect]`). Modes via `data-filter-target-match` (`single`/`multi`) et
@@ -236,7 +236,18 @@ enfants `[data-filter-name-collect]`). Modes via `data-filter-target-match` (`si
 Barba-safe : listener sur le groupe (dans le container remplacé par Barba) + garde `data-filter-bound`.
 ⚠️ **État actif du bouton adapté** : l'original Osmo (`background:#131313`) est invisible sur le fond sombre du
 site → remplacé par l'accent **bleu** (`--_primitives---colors--dodger-blue`, texte sombre). ⚠️ Le filtrage
-ne fait effet que si les items portent un `data-filter-name` (à binder sur la catégorie CMS côté Webflow).
+ne fait effet que si les items portent un `data-filter-name`.
+
+**Mode « libellé » pour les listes CMS (T04 Blogue).** Webflow ne sait pas lier la *valeur* d'un attribut
+à un champ CMS : les jetons ne peuvent donc pas être écrits dans le Designer. On compare les **libellés rendus** :
+- chip : `data-filter-target="label"` → le JS remplace la valeur par le texte du bouton normalisé
+  (`filterSlug` : minuscules, sans accents, tirets) ;
+- item : `data-filter-name="label"` + des enfants `[data-filter-label]` (liste de catégories imbriquée,
+  masquée par la classe `filter-labels`) → jetons = leurs textes normalisés.
+
+Chip et item affichent le même champ (Nom de la catégorie) : ils correspondent par construction, en FR comme
+en EN, et renommer une catégorie met les deux à jour. Les chips CMS sont des `div` `role="button"
+tabindex="0"` : Entrée / Espace sont gérés par le JS.
 
 ### 3D Image Carousel (Osmo) — page À Propos
 `init3dImageCarousel` : cylindre 3D de panneaux `[data-3d-carousel-panel]` dans `[data-3d-carousel-wrap]`
