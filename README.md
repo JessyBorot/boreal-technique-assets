@@ -320,6 +320,17 @@ statut sur `[data-navigation-status]` (`active`/`not-active`), ESC ferme. Intèg
 (hamburger, tile clip-path plein écran, liens qui montent en cascade + hover). L'ancien
 `initTwostepScalingNavigation` / `.twostep-nav__*` est retiré.
 
+⚠️ **Depuis la V2, les liens ne portent plus `.bold-nav-full__link`** mais les classes de titre du site
+(`heading-style-h2` pour les services, `heading-style-h4 alt` pour le reste) : la montée en cascade et le
+hover « roll » d'Osmo ne s'appliquent donc plus. Correctif du 2026-09-30 (bug QA G1, menu illisible sur mobile) :
+- `text-shadow` retiré de `.bold-nav-full__link-text` (Webflow) : c'était le « clone » du hover roll ; sans
+  hover, il se superposait aux libellés sur 2 lignes et laissait un trait sous les majuscules accentuées ;
+- `.bold-nav-full__tile` : `padding-top: 7.5rem` (la liste passait sous le logo sur un écran de 760px de haut),
+  `padding-bottom: 2.5rem`, `overflow-y: auto` ; gap de la liste `clamp(0.75rem, 2.2vh, 1.5rem)` (Webflow) ;
+- ici : taille des liens du menu indexée sur la hauteur ET la largeur de l'écran
+  (`.bold-nav-full__ul .heading-style-h2` / `.heading-style-h4`), pour que chaque libellé tienne sur une ligne.
+Vérifié de 390×667 à 1920×1080 : 1 ligne par libellé, 29 à 148px sous le logo, sans défilement.
+
 ### Titre de hero — apparition lettre par lettre après la transition
 `initHeroTitleReveal` traite les **`h1[data-split="heading"]`** ; les autres titres restent sur
 `initSplitHeadings` (apparition par lignes au scroll), dont le sélecteur exclut désormais

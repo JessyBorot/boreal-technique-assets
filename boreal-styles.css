@@ -52,6 +52,15 @@
 .bold-nav-full__link .bold-nav-full__link-text { transition: transform 0.5s cubic-bezier(.7, 0, .3, 1); transform: translateY(0%) rotate(0.001deg); }
 .bold-nav-full__link:hover .bold-nav-full__link-text { transform: translateY(-100%) rotate(0.001deg); }
 
+/* Taille des liens du menu plein écran (V2) : les liens portent les classes de titre du site
+   (heading-style-h2 pour les services, heading-style-h4 pour le reste), dont la taille ne dépend
+   que de la largeur. Dans le menu, elle suit aussi la HAUTEUR de l'écran (sinon la liste passe
+   sous le logo sur un portable 1440×760) et, sous 480px, la largeur, pour que chaque libellé
+   tienne sur une ligne (« Location de scènes mobiles » = 408px à 33px pour 342px dispo à 390).
+   Portée limitée au menu : les titres des pages ne changent pas. */
+.bold-nav-full__ul .heading-style-h2 { font-size: clamp(1.4rem, min(6.2vh, 6.8vw), 3.5rem); }
+.bold-nav-full__ul .heading-style-h4 { font-size: clamp(1.25rem, min(3.3vh, 4.5vw), 1.9rem); }
+
 
 /* ===== LOGO DE LA NAV — réduction au scroll =====
    `initNavLogoShrink` (persistant) pose `data-nav-shrink` sur <html> passé ~250px de scroll.
