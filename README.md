@@ -305,6 +305,13 @@ bleu `dodger-blue` au survol/focus.
   `min-height: clamp(22rem, 65svh, 34rem)`.
 - `h1.heading-style-h1 { text-wrap: balance }` (sans effet sur un titre à `<br>` forcés).
 
+### Correctifs QA par page (2026-09-30)
+- **Masonry** : 1 colonne sous 479px (`--masonry-col: 1`) ; images de la grille passées en `loading="eager"` à l'init
+  (en lazy, leur hauteur nulle faussait le calcul puis la grille sautait au défilement).
+- **Titres découpés** : `gluePunctuation()` colle la ponctuation qui suit un `<span>` (« …l'ombre</span>. ») à la
+  fin du span avant SplitText (`initHeroTitleReveal`, `initSplitHeadings`), sinon le « . » pouvait partir seul à la ligne.
+- **Mission / Vision (T03)** : taille du style h1 réduite dans `.section_mission-vision` sous 767 / 479px.
+
 ### Formulaire underlay (soumission)
 - Panneau latéral persistant (`initFixedUnderlayNavigation`) ouvert par tout `[data-underlay-nav-toggle]`.
 - `.underlay-nav__inner` : `data-lenis-prevent` (posé en JS) + `max-height:100svh; overflow-y:auto`

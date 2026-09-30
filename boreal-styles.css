@@ -508,6 +508,10 @@
 @media screen and (max-width: 767px) {
   [data-masonry-list] { --masonry-col: 2; --masonry-gap: 0.5em; }
 }
+/* 390 : 2 colonnes de 160 px, libellés par-dessus les images → 1 colonne (Bug QA T02-1 / T07-4, 2026-09-30). */
+@media screen and (max-width: 479px) {
+  [data-masonry-list] { --masonry-col: 1; --masonry-gap: 0.75em; }
+}
 /* ⚠️ FIX largeur (sinon grille « vide ») : le JS passe les items en position:absolute → le container
    n'a plus rien en flux et sa chaîne parente (.masonry-wrap est un flex-item SANS grow dans une section
    flex) s'effondre en largeur → les items calculés en calc(100%…) tombent à 0. On force la chaîne à
@@ -833,3 +837,9 @@
    un titre qui contient des <br> (ex. accueil « Rassembler les gens⏎à travers… ») : là, c'est le <br>
    du Designer qui décide (Bug QA A3, 2026-09-30). Ignoré sans dommage par un navigateur qui ne le connaît pas. */
 h1.heading-style-h1 { text-wrap: balance; }
+
+/* ===== À PROPOS — Mission / Vision =====
+   Des phrases entières en style h1 : à 390, 40 px donnaient 11 lignes de 1 ou 2 mots (Bug QA T03-3, 2026-09-30).
+   Portée limitée à la section (le style h1 du site ne change pas ailleurs). */
+@media screen and (max-width: 767px) { .section_mission-vision .heading-style-h1 { font-size: 2.25rem; } }
+@media screen and (max-width: 479px) { .section_mission-vision .heading-style-h1 { font-size: 1.75rem; line-height: 1.2; } }

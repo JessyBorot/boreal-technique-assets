@@ -681,12 +681,28 @@ function initContentRevealScroll() {
 // Split en chars ET lines : le masque est posé sur les LIGNES (une ligne = une fenêtre), les
 // CHARS montent à travers. Masquer par caractère découperait chaque lettre dans sa propre
 // boîte et casserait les jambages.
+// Ponctuation collée à un élément inline (« <span>artisans de l'ombre</span>. Les… ») : sans espace
+// entre les deux, SplitText en fait des blocs voisins et le navigateur peut couper ENTRE eux → un « . »
+// seul en début de ligne (Bug QA T03-4, 2026-09-30). On déplace cette ponctuation à la fin de l'élément
+// avant de découper : elle prend sa couleur, mais ne peut plus partir seule à la ligne.
+function gluePunctuation(root) {
+  root.querySelectorAll("span, strong, em, a").forEach((el) => {
+    const next = el.nextSibling;
+    if (!next || next.nodeType !== 3) return;
+    const m = next.data.match(/^[.,;:!?…»)]+/);
+    if (!m) return;
+    el.appendChild(document.createTextNode(m[0]));
+    next.data = next.data.slice(m[0].length);
+  });
+}
+
 function initHeroTitleReveal() {
   if (reducedMotion) return; // titre laissé visible tel quel, jamais masqué
   const titles = nextPage.querySelectorAll('h1[data-split="heading"]');
   titles.forEach((title) => {
     if (title.hasAttribute("data-split-done")) return;
     title.setAttribute("data-split-done", "");
+    gluePunctuation(title);
     SplitText.create(title, {
       type: "chars,lines", mask: "lines", autoSplit: true,
       onSplit(instance) {
@@ -717,6 +733,7 @@ function initSplitHeadings() {
   headings.forEach((heading) => {
     if (heading.hasAttribute("data-split-done")) return;
     heading.setAttribute("data-split-done", "");
+    gluePunctuation(heading);
     SplitText.create(heading, {
       type: "lines", autoSplit: true, mask: "lines",
       onSplit(instance) {
@@ -1309,6 +1326,11 @@ function initMasonryGrid() {
         }
       });
     };
+
+    // Images en lazy = hauteur nulle tant qu'elles ne sont pas chargées : la grille se calculait avec de
+    // fausses hauteurs puis se réarrangeait pendant le défilement (saut + colonnes déséquilibrées,
+    // Bug QA T02-2). On les charge d'emblée : la grille se recalcule une fois, avant d'être vue.
+    container.querySelectorAll('img[loading="lazy"]').forEach((img) => { img.loading = "eager"; });
 
     layout();
     imgLoad();
