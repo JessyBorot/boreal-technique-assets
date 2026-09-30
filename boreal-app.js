@@ -220,6 +220,16 @@ function initBarba() {
     debug: false,
     timeout: 7000,
     preventRunning: true,
+    // Changement de langue = rechargement complet. Le menu, le footer et le formulaire
+    // latéral vivent hors du conteneur Barba : une transition les laisserait dans
+    // l'ancienne langue. Couvre le sélecteur (liens hreflang) et tout lien FR ↔ /en.
+    prevent: ({ el, href }) => {
+      if (el && (el.hasAttribute("hreflang") || el.closest(".w-locales-list"))) return true;
+      try {
+        const target = new URL(href, window.location.href);
+        return localeOfPath(target.pathname) !== localeOfPath(window.location.pathname);
+      } catch (e) { return false; }
+    },
     transitions: [{
       name: "default",
       sync: true,
@@ -244,6 +254,11 @@ function initBarba() {
 // -----------------------------------------
 // HELPERS
 // -----------------------------------------
+// Locale d'une URL : l'anglais vit sous /en, le français à la racine.
+function localeOfPath(pathname) {
+  return /^\/en(\/|$)/.test(pathname) ? "en" : "fr";
+}
+
 function closeNav() {
   const s = document.querySelector("[data-navigation-status]");
   if (s) s.setAttribute("data-navigation-status", "not-active");

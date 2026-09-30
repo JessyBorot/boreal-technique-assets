@@ -442,6 +442,15 @@ Réglages, en surcharge sur la section (variables CSS) :
 ```
 ⚠️ Invisible dans le canvas Designer — juger sur l'URL publiée.
 
+### Site bilingue — changement de langue = rechargement complet (Barba)
+Le menu, le footer et le formulaire latéral vivent **hors** du conteneur Barba (`[data-barba="container"]`) :
+une transition Barba ne remplace que le contenu central, et ces trois blocs resteraient dans l'ancienne
+langue. `barba.init` reçoit donc une option `prevent` : Barba laisse le navigateur recharger la page quand
+- le lien porte `hreflang` ou vit dans le sélecteur Webflow (`.w-locales-list`) ;
+- ou la langue de la cible diffère de la page courante (`localeOfPath` : `/en…` = anglais, le reste = français).
+Les liens à l'intérieur d'une même langue gardent la transition. Si le sous-dossier anglais change
+(Site settings › Localization), adapter la regex de `localeOfPath`.
+
 ## URLs CDN (jsDelivr)
 ```
 https://cdn.jsdelivr.net/gh/JessyBorot/boreal-technique-assets@main/boreal-app.js
