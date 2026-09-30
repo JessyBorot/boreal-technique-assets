@@ -214,6 +214,7 @@ function initBarba() {
   barba.hooks.afterEnter((data) => {
     runPageModulesOnce(data.next.container);
     settleScroll(data.next.container);
+    scrollToHashAfterTransition();
   });
 
   barba.init({
@@ -238,6 +239,7 @@ function initBarba() {
         applyThemeFrom(data.next.container);
         runPageModulesOnce(data.next.container); // filet si afterEnter ne fire pas sur once
         settleScroll(data.next.container);
+        scrollToHashAfterTransition();
         return runPageOnceAnimation(data.next.container);
       },
       async leave(data) {
@@ -257,6 +259,20 @@ function initBarba() {
 // Locale d'une URL : l'anglais vit sous /en, le français à la racine.
 function localeOfPath(pathname) {
   return /^\/en(\/|$)/.test(pathname) ? "en" : "fr";
+}
+
+// Lien vers une section d'une AUTRE page (ex. menu/footer → /#services-audiovisuels) :
+// Barba remplace le contenu mais ne suit pas l'ancre, et la transition remet le scroll en haut.
+// On descend donc à la section une fois la transition finie (signal boreal:page-ready).
+function scrollToHashAfterTransition() {
+  const hash = window.location.hash;
+  if (!hash || hash.length < 2) return;
+  onPageReady(() => setTimeout(() => {
+    const el = document.getElementById(decodeURIComponent(hash.slice(1)));
+    if (!el) return;
+    if (window.lenis) window.lenis.scrollTo(el, { immediate: true, force: true });
+    else el.scrollIntoView();
+  }, 150));
 }
 
 function closeNav() {
