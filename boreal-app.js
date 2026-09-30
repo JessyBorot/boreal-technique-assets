@@ -86,6 +86,7 @@ function runPageModulesOnce(container) {
   nextPage = container || document;
 
   const modules = [
+    frenchSpacing,             // FR : espaces insécables avant ? ! : ; et dans « » — AVANT les découpes de titres
     localizeRootAnchors,       // idem pour les liens du contenu de la page
     initButtonCharacterStagger,
     initGlobalParallax,        // parallax flexible Osmo ([data-parallax="trigger"])
@@ -681,6 +682,28 @@ function initContentRevealScroll() {
 // Split en chars ET lines : le masque est posé sur les LIGNES (une ligne = une fenêtre), les
 // CHARS montent à travers. Masquer par caractère découperait chaque lettre dans sa propre
 // boîte et casserait les jambages.
+// Typographie française : une espace ordinaire avant « ? ! : ; » laisse le signe partir seul en début de
+// ligne (« …et vidéo / ? », Bug QA T04-5, 2026-09-30). Sur les pages FR seulement, on la remplace par une
+// insécable (fine pour ? ! ;, normale pour :), et de même après « / avant ». Textes des pages ET du CMS.
+function frenchSpacing() {
+  if (!/^fr\b/i.test(document.documentElement.lang || "")) return;
+  const root = nextPage || document;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: (n) => (n.parentElement && n.parentElement.closest("script, style, textarea, input, code, pre")
+      ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT)
+  });
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach((n) => {
+    const t = n.data
+      .replace(/[ \u00A0]+([?!;])/g, "\u202F$1")
+      .replace(/[ \u00A0]+:/g, "\u00A0:")
+      .replace(/«[ \u00A0]+/g, "«\u00A0")
+      .replace(/[ \u00A0]+»/g, "\u00A0»");
+    if (t !== n.data) n.data = t;
+  });
+}
+
 // Ponctuation collée à un élément inline (« <span>artisans de l'ombre</span>. Les… ») : sans espace
 // entre les deux, SplitText en fait des blocs voisins et le navigateur peut couper ENTRE eux → un « . »
 // seul en début de ligne (Bug QA T03-4, 2026-09-30). On déplace cette ponctuation à la fin de l'élément
@@ -704,7 +727,9 @@ function initHeroTitleReveal() {
     title.setAttribute("data-split-done", "");
     gluePunctuation(title);
     SplitText.create(title, {
-      type: "chars,lines", mask: "lines", autoSplit: true,
+      // `words` est indispensable : des lettres sans mot parent sont des blocs voisins entre lesquels le
+      // navigateur peut couper → « Cascad / es » (T07) dès qu'un mot ne tient pas (Bug QA T07-1, 2026-09-30).
+      type: "words,chars,lines", mask: "lines", autoSplit: true,
       onSplit(instance) {
         // autoSplit re-découpe au resize (et au chargement des polices) : une fois le titre
         // apparu, on le laisse en place au lieu de le refaire entrer à chaque redécoupe.
@@ -2322,14 +2347,16 @@ function initMiniShowreelPlayer() {
     const bunny = wrap.querySelector("[data-bunny-player-init]");
     const video = wrap.querySelector("video"); if (!video) return;
     if (bunny) { const btn = bunny.querySelector('[data-player-control="play"], [data-player-control="playpause"]'); if (btn && (video.paused || video.ended)) btn.click(); return; }
-    try { video.play(); } catch (_) {}
+    // <video> natif (T07 Hero projet, T10) : ouvert par un clic → le son est permis ; contrôles natifs.
+    video.muted = false; video.controls = true;
+    try { const p = video.play(); if (p && p.catch) p.catch(() => { video.muted = true; video.play().catch(() => {}); }); } catch (_) {}
   }
   function stopFor(name) {
     const wrap = getPW(name); if (!wrap) return;
     const bunny = wrap.querySelector("[data-bunny-player-init]");
     const video = wrap.querySelector("video"); if (!video) return;
     if (bunny) { const btn = bunny.querySelector('[data-player-control="pause"], [data-player-control="playpause"]'); if (btn && (!video.paused && !video.ended)) btn.click(); }
-    else { try { video.pause(); } catch (_) {} }
+    else { try { video.pause(); } catch (_) {} video.muted = true; video.controls = false; }
     try { video.currentTime = 0; } catch (_) {}
   }
 
@@ -2921,6 +2948,13 @@ function initFeaturedGrid() {
   const FEATURE_EVERY = 5;
 
   document.querySelectorAll(".filter-list").forEach((list) => {
+    // Grille de réalisations (T06) seulement. Le blogue (T04) réutilise `.filter-list` pour son filtre :
+    // des cartes TEXTE de hauteur variable passées en 2×2 y laissaient des trous d'environ 350 px, et la
+    // page a déjà son article vedette (Bug QA T04-1, 2026-09-30).
+    if (list.closest(".blog22_component")) {
+      list.querySelectorAll("[data-grid-size]").forEach((item) => item.removeAttribute("data-grid-size"));
+      return;
+    }
     const layout = () => {
       const items = Array.from(list.querySelectorAll(".filter-list__item"));
       let rank = 0; // rang parmi les cartes VISIBLES

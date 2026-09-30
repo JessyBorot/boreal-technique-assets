@@ -429,6 +429,10 @@
 
 /* ===== MINI SHOWREEL PLAYER (Osmo) — page Réalisation (T07) ===== */
 [data-mini-showreel-status="active"] .mini-showreel__click { display: none; }
+/* <video> natif de la carte (T07 Hero projet, T10) : la carte fermée montre l'image de couverture,
+   la vidéo apparaît à l'ouverture (Bug QA T07-3, 2026-09-30 : la lightbox s'ouvrait sans vidéo). */
+.mini-showreel__video-el { transition: opacity .4s ease; }
+[data-mini-showreel-status="not-active"] .mini-showreel__video-el { opacity: 0; pointer-events: none; }
 [data-mini-showreel-status] .mini-showreel__info { transition: margin 1s cubic-bezier(0.87, 0, 0.13, 1); }
 [data-mini-showreel-status="active"] .mini-showreel__info { margin-top: -2.75em; }
 [data-mini-showreel-status] .mini-showreel__card { transition: margin 1s cubic-bezier(0.87, 0, 0.13, 1); }
@@ -682,7 +686,7 @@
   grid-auto-flow: dense;
   gap: clamp(0.75rem, 1.5vw, 1.5rem);
 }
-.filter-list__item { width: auto; max-width: none; margin: 0; }
+.filter-list__item { width: auto; max-width: none; margin: 0; padding: 0; } /* la gouttière = le gap de la grille (le padding Osmo de 0.75em la doublait : Bug QA T04-2 / T06-2) */
 .filter-list__item .demo-card { width: 100%; height: 100%; aspect-ratio: 16 / 9; }
 .filter-list__item .cover-image { width: 100%; height: 100%; object-fit: cover; }
 
@@ -843,3 +847,14 @@ h1.heading-style-h1 { text-wrap: balance; }
    Portée limitée à la section (le style h1 du site ne change pas ailleurs). */
 @media screen and (max-width: 767px) { .section_mission-vision .heading-style-h1 { font-size: 2.25rem; } }
 @media screen and (max-width: 479px) { .section_mission-vision .heading-style-h1 { font-size: 1.75rem; line-height: 1.2; } }
+
+/* ===== FILTRE OSMO (T04 blogue, T06 réalisations) — alignement sur le contenu =====
+   La rangée de boutons portait un padding latéral de 1em : les filtres démarraient 16 px à l'intérieur
+   du bord des autres blocs (Bug QA T04-2 / T06-2, 2026-09-30). Pour les cartes, voir `.filter-list__item`. */
+.filter-buttons { padding-left: 0; padding-right: 0; }
+/* 390 : 5 filtres sur 4 lignes (Bug QA T04-3) → une ligne qui défile horizontalement. */
+@media screen and (max-width: 479px) {
+  .filter-buttons { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .filter-buttons::-webkit-scrollbar { display: none; }
+  .filter-buttons > * { flex: 0 0 auto; }
+}

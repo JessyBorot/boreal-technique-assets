@@ -310,6 +310,15 @@ bleu `dodger-blue` au survol/focus.
   (en lazy, leur hauteur nulle faussait le calcul puis la grille sautait au défilement).
 - **Titres découpés** : `gluePunctuation()` colle la ponctuation qui suit un `<span>` (« …l'ombre</span>. ») à la
   fin du span avant SplitText (`initHeroTitleReveal`, `initSplitHeadings`), sinon le « . » pouvait partir seul à la ligne.
+- **Typographie FR** : `frenchSpacing()` (premier module de page, pages `lang=fr` seulement) remplace l'espace avant
+  `? ! ;` par une fine insécable, avant `:` par une insécable, et fait de même dans « » — textes des pages et du CMS.
+- **Titres de hero** : `initHeroTitleReveal` découpe en `words,chars,lines` (sans `words`, le navigateur coupait au
+  milieu d'un mot : « Cascad / es »).
+- **Grille filtrable** (`initFeaturedGrid`) : réservée à T06 ; le blogue (`.blog22_component`) garde des cartes égales.
+  `.filter-list__item` sans padding (la gouttière = le `gap`), `.filter-buttons` sans padding latéral ; sous 479px,
+  les filtres défilent sur une ligne.
+- **Showreel à `<video>` natif** (T07 Hero projet — source = propriété du composant —, T10) : son + contrôles à
+  l'ouverture, muet à la fermeture ; la vidéo n'apparaît qu'à l'ouverture (`.mini-showreel__video-el`).
 - **Mission / Vision (T03)** : taille du style h1 réduite dans `.section_mission-vision` sous 767 / 479px.
 
 ### Formulaire underlay (soumission)
