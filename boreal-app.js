@@ -460,6 +460,8 @@ const CURSOR_LABELS_EN = {
   "Découvrir": "Discover",
   "Lire l’article": "Read the article",
   "Lire l'article": "Read the article",
+  "Voir le profil": "View profile",
+  "Voir la vidéo": "Watch the video",
 };
 function cursorLabel(text) {
   const t = (text || "").trim();

@@ -503,6 +503,18 @@ l'élément survolé. Or la localisation Webflow ne traduit pas les attributs : 
 d'après la table `CURSOR_LABELS_EN`. **Tout nouveau libellé de curseur doit être ajouté à cette table**,
 sinon il sort en français sur la version anglaise.
 
+Libellés en place (bug QA G4, 2026-09-30) — poser l'attribut dans le Designer sur l'élément cliquable :
+
+| Libellé | Éléments |
+|---|---|
+| « En savoir plus » | cartes services (accueil), slider radial (accueil, T02), masonry (T02) |
+| « Voir le projet » | cartes du panorama des réalisations |
+| « Lire l'article » | cartes de blogue (accueil, T04 dont l'article vedette, articles connexes) |
+| « Voir le profil » | équipe (T03) |
+| « Voir la vidéo » | bouton vidéo du hero (T07, composant Hero projet ; T10) |
+
+Les contrôles (flèches et puces de slider, filtres) et les boutons animés gardent le curseur normal.
+
 ## URLs CDN (jsDelivr)
 ```
 https://cdn.jsdelivr.net/gh/JessyBorot/boreal-technique-assets@main/boreal-app.js
