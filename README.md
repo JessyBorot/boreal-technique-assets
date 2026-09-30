@@ -311,6 +311,18 @@ bleu `dodger-blue` au survol/focus.
   Le `transform` d'ouverture réancrait son `position:fixed` → après scroll elle sautait hors écran.
   Fix (`initFixedUnderlayNavigation`) : `translateY(scrollY)` sur la nav à l'ouverture + `lenis.stop()`
   (fond gelé), nettoyé à la fermeture. Global (toutes pages), rien à faire dans le Designer.
+- **Ouverture par délégation** (bug QA G3, 2026-09-30) : un seul écouteur `click` sur `document`, en phase de
+  **capture**, pour tout `[data-underlay-nav-toggle]`. Avant, les écouteurs étaient posés élément par élément
+  à l'init (module persistant) : les CTA « Estimation gratuite » d'une page chargée par Barba n'ouvraient rien.
+  Le clic fait `preventDefault` et Barba écarte ces liens (`prevent`) : le bouton du mega menu garde un
+  `href="/t08-contact"` de repli, qui ouvrait le panneau ET changeait de page derrière.
+- Ouvrir le panneau referme le mega menu (`closeNav()`) ; un changement de page Barba referme le panneau
+  (`closeUnderlayNav()` dans `barba.hooks.before`).
+- **Largeurs** (bug QA G2) : `.underlay-nav__inner .form-group { width:100%; max-width:100% }` (la classe
+  `form-group` fait 32em pour les formulaires de T08 / T10 et débordait du panneau de 480px) ;
+  `--menu-width: 100vw` sous 767px (plein écran au lieu d'une bande de page visible à 80vw). Webflow :
+  `.underlay-nav__inner` en `overflow-x: hidden; overflow-y: auto` (l'`overflow: scroll` affichait une barre).
+- Pour ajouter un bouton qui ouvre le formulaire : poser l'attribut `data-underlay-nav-toggle` dans le Designer.
 
 ### Menu — bold full-screen (Osmo) — remplace le two-step scaling
 Module `initBoldFullScreenNavigation` (persistant, `initOnce`). Toggle/close via
@@ -330,6 +342,8 @@ hover « roll » d'Osmo ne s'appliquent donc plus. Correctif du 2026-09-30 (bug 
 - ici : taille des liens du menu indexée sur la hauteur ET la largeur de l'écran
   (`.bold-nav-full__ul .heading-style-h2` / `.heading-style-h4`), pour que chaque libellé tienne sur une ligne.
 Vérifié de 390×667 à 1920×1080 : 1 ligne par libellé, 29 à 148px sous le logo, sans défilement.
+- `.bold-nav__bottom` (réseaux sociaux, absolute pleine largeur) en `pointer-events: none` (ses liens le reprennent) :
+  il recouvrait la moitié basse du bouton « Estimation rapide » du menu (bug QA G3).
 
 ### Titre de hero — apparition lettre par lettre après la transition
 `initHeroTitleReveal` traite les **`h1[data-split="heading"]`** ; les autres titres restent sur

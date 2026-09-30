@@ -199,7 +199,7 @@ function runPageEnterAnimation(next) {
 // BARBA
 // -----------------------------------------
 function initBarba() {
-  barba.hooks.before(() => { closeNav(); closeModals(); _pageReadyFired = false; });
+  barba.hooks.before(() => { closeNav(); closeUnderlayNav(); closeModals(); _pageReadyFired = false; });
 
   barba.hooks.beforeEnter((data) => {
     gsap.set(data.next.container, { position: "fixed", top: 0, left: 0, right: 0 });
@@ -228,6 +228,9 @@ function initBarba() {
     // l'ancienne langue. Couvre le sélecteur (liens hreflang) et tout lien FR ↔ /en.
     prevent: ({ el, href }) => {
       if (el && (el.hasAttribute("hreflang") || el.closest(".w-locales-list"))) return true;
+      // Bouton qui ouvre le panneau formulaire : son href n'est qu'un repli sans JS (Bug QA G3).
+      // Barba ignore defaultPrevented, il faut l'écarter ici.
+      if (el && el.closest("[data-underlay-nav-toggle]")) return true;
       try {
         const target = new URL(href, window.location.href);
         return localeOfPath(target.pathname) !== localeOfPath(window.location.pathname);
@@ -286,6 +289,9 @@ function scrollToHashAfterTransition() {
     else el.scrollIntoView();
   }, 150));
 }
+
+// Refermé par initFixedUnderlayNavigation() (panneau formulaire) — no-op tant qu'il n'est pas initialisé.
+let closeUnderlayNav = () => {};
 
 function closeNav() {
   const s = document.querySelector("[data-navigation-status]");
@@ -1911,6 +1917,7 @@ function initFixedUnderlayNavigation() {
     toggleBtn.setAttribute("aria-label", isOpen ? "close menu" : "open menu");
     document.body.setAttribute("data-menu-status", isOpen ? "open" : "");
     if (isOpen) {
+      closeNav(); // ouvert depuis le mega menu : on referme le menu d'abord (Bug QA G3)
       if (navFixed) gsap.set(navFixed, { y: getScrollY() }); // garde la nav à l'écran malgré le transform
       if (window.lenis) window.lenis.stop();                 // gèle le fond (S constant + meilleure UX)
       tl.invalidate();
@@ -1926,8 +1933,20 @@ function initFixedUnderlayNavigation() {
   buildTimeline();
 
   // Ouvre le panneau depuis N'IMPORTE quel élément [data-underlay-nav-toggle]
-  // (bouton hamburger, CTA « Demander une soumission », nav « Estimation rapide »…)
-  document.querySelectorAll("[data-underlay-nav-toggle]").forEach((btn) => btn.addEventListener("click", toggle));
+  // (bouton hamburger, CTA « Estimation gratuite », nav « Estimation rapide »…).
+  // Délégation en phase de CAPTURE (Bug QA G3, 2026-09-30) :
+  // - les CTA des pages arrivent avec Barba APRÈS cette init (module persistant) : un
+  //   écouteur posé élément par élément les ratait → délégation sur document ;
+  // - le bouton de nav garde un href (/t08-contact, repli sans JS) : sans preventDefault
+  //   AVANT le clic de Barba, le panneau s'ouvrait ET la page changeait derrière.
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest && e.target.closest("[data-underlay-nav-toggle]");
+    if (!btn) return;
+    e.preventDefault();
+    toggle();
+  }, true);
+  // Changement de page (Barba) : on referme le panneau s'il est resté ouvert.
+  closeUnderlayNav = () => { if (isOpen) toggle(); };
   overlayEl.addEventListener("click", () => { if (isOpen) toggle(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && isOpen) { toggle(); toggleBtn.focus(); } });
 

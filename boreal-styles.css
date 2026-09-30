@@ -60,6 +60,11 @@
    Portée limitée au menu : les titres des pages ne changent pas. */
 .bold-nav-full__ul .heading-style-h2 { font-size: clamp(1.4rem, min(6.2vh, 6.8vw), 3.5rem); }
 .bold-nav-full__ul .heading-style-h4 { font-size: clamp(1.25rem, min(3.3vh, 4.5vw), 1.9rem); }
+/* La barre du bas (réseaux sociaux) est en absolute pleine largeur : elle recouvrait la moitié
+   basse du bouton « Estimation rapide » du menu, qui ne répondait qu'au clic sur son haut.
+   Elle laisse passer les clics, ses liens les reprennent. (Bug QA G3, 2026-09-30.) */
+.bold-nav__bottom { pointer-events: none; }
+.bold-nav__bottom a { pointer-events: auto; }
 
 
 /* ===== LOGO DE LA NAV — réduction au scroll =====
@@ -237,7 +242,14 @@
 /* Le contenu de page recouvre le panneau (fixed, z-index:1) tant qu'il n'a pas
    coulissé. Fond opaque obligatoire, sinon le panneau se voit par transparence. */
 [data-main] { position: relative; z-index: 2; background-color: var(--_primitives---colors--neutral-darkest); }
-@media screen and (max-width: 767px) { :root { --menu-width: 80vw; } }
+/* Mobile : panneau plein écran (à 80vw, une bande de page restait visible et les champs
+   tombaient à ~270px à 390). Fermeture par le X du panneau. (Bug QA G2, 2026-09-30.) */
+@media screen and (max-width: 767px) { :root { --menu-width: 100vw; } }
+
+/* Le formulaire garde la largeur du panneau. La classe .form-group (32em, partagée avec les
+   formulaires de T08 / T10) débordait de 96px du panneau de 30em → champs coupés à droite et
+   défilement horizontal. Portée limitée au panneau. (Bug QA G2.) */
+.underlay-nav__inner .form-group { width: 100%; max-width: 100%; }
 
 /* Aperçu dans le Designer : mettre data-menu-status="open" sur le body.
    (Sélecteur scopé .wf-design-mode → n'affecte pas le site publié.)
