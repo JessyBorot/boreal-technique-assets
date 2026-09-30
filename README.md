@@ -298,6 +298,13 @@ bouton *Postuler*) est déplacé en JS dans un conteneur injecté `[data-career-
 Habillage dans `boreal-styles.css` (`.career14_toggle`, chevron, repli) — souligné en blanc,
 bleu `dodger-blue` au survol/focus.
 
+### Cartes services en rangée — tablette et mobile (bug QA A1, 2026-09-30)
+- Sous 991px (2 colonnes puis 1), l'éventail d'angles de la rangée desktop (jusqu'à ±6°) faisait sortir les
+  grandes cartes de bout de l'écran : `initStackingStickyCardsBounce` y alterne ±2° (recalculé au passage du breakpoint).
+- Sous 767px, le ratio 2/3 donnait des cartes de plus de 1 000px de haut : `aspect-ratio: auto` +
+  `min-height: clamp(22rem, 65svh, 34rem)`.
+- `h1.heading-style-h1 { text-wrap: balance }` (sans effet sur un titre à `<br>` forcés).
+
 ### Formulaire underlay (soumission)
 - Panneau latéral persistant (`initFixedUnderlayNavigation`) ouvert par tout `[data-underlay-nav-toggle]`.
 - `.underlay-nav__inner` : `data-lenis-prevent` (posé en JS) + `max-height:100svh; overflow-y:auto`

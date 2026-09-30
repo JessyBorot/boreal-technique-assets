@@ -462,6 +462,9 @@
 }
 @media screen and (max-width: 767px) {
   .cards-stack__item { flex: 1 1 100% !important; }
+  /* Une colonne : le ratio 2/3 donnait des cartes de plus de 1 000 px de haut à 767 (plus haut que
+     l'écran). La hauteur suit l'écran, bornée. (Bug QA A1, 2026-09-30.) */
+  .cards-stack__item .cards-stack-card { aspect-ratio: auto; min-height: clamp(22rem, 65svh, 34rem); }
 }
 
 
@@ -824,3 +827,9 @@
     --glow-opacity: 0.13; --glow-height: clamp(16rem, 40vh, 26rem); --glow-width: 260%;
   }
 }
+
+/* ===== TITRES — lignes équilibrées =====
+   `text-wrap: balance` évite un mot seul en dernière ligne sur les h1 sans retour forcé. Sans effet sur
+   un titre qui contient des <br> (ex. accueil « Rassembler les gens⏎à travers… ») : là, c'est le <br>
+   du Designer qui décide (Bug QA A3, 2026-09-30). Ignoré sans dommage par un navigateur qui ne le connaît pas. */
+h1.heading-style-h1 { text-wrap: balance; }

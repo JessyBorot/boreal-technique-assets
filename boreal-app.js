@@ -840,7 +840,12 @@ function initStackingStickyCardsBounce() {
   // Éventail symétrique (la carte du milieu est droite quand le nombre est impair) et
   // amplitude qui diminue quand les cartes se multiplient : plus elles sont étroites,
   // plus une forte inclinaison mange la largeur du voisin.
+  // Sous 991 px, les cartes passent en 2 colonnes puis en 1 : l'éventail pensé pour la rangée
+  // desktop (jusqu'à ±6°) fait sortir de l'écran les grandes cartes de bout (Bug QA A1,
+  // 2026-09-30). On y alterne un petit angle (±2°), qui garde l'effet « posé à la main ».
+  const stackedMq = window.matchMedia("(max-width: 991px)");
   function restAngles(n) {
+    if (stackedMq.matches) return Array.from({ length: n }, (_, i) => (i % 2 ? 2 : -2));
     if (n < 2) return [0];
     const max = Math.min(6, 24 / n); // 4 cartes → 6° ; 5 → 4.8° ; 6 → 4°
     return Array.from({ length: n }, (_, i) => max * ((2 * i) / (n - 1) - 1));
@@ -854,8 +859,13 @@ function initStackingStickyCardsBounce() {
     if (!targets.length) return;
 
     // angle statique (les cartes restent inclinées ; le chevauchement est en CSS)
-    const angles = restAngles(targets.length);
-    gsap.set(targets, { rotate: (i) => angles[i], transformOrigin: "50% 100%" });
+    const applyAngles = () => {
+      const angles = restAngles(targets.length);
+      gsap.set(targets, { rotate: (i) => angles[i], transformOrigin: "50% 100%" });
+    };
+    applyAngles();
+    // Passage desktop ↔ tablette sans rechargement : recalculer les angles.
+    if (!section._borealAnglesMq) { section._borealAnglesMq = true; stackedMq.addEventListener("change", applyAngles); }
 
     if (reduce) { gsap.set(targets, { y: 0, autoAlpha: 1 }); return; }
 
