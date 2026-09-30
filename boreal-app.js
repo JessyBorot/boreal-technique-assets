@@ -416,6 +416,23 @@ function initButtonCharacterStagger() {
 }
 
 // ---- CURSEUR : marquee ----
+// Le libellé vient de l'attribut data-cursor-marquee-text de l'élément survolé. Un attribut n'est
+// pas traduit par la localisation Webflow : sur une page <html lang="en-…">, on traduit ici les
+// libellés connus (un libellé absent de la table sort tel quel). Changer de langue recharge la
+// page (Barba prevent), donc lang est toujours à jour.
+const CURSOR_LABELS_EN = {
+  "En savoir plus": "Learn more",
+  "Voir le projet": "View project",
+  "Découvrir": "Discover",
+  "Lire l’article": "Read the article",
+  "Lire l'article": "Read the article",
+};
+function cursorLabel(text) {
+  const t = (text || "").trim();
+  if (!/^en\b/i.test(document.documentElement.lang || "")) return t;
+  return CURSOR_LABELS_EN[t] || t;
+}
+
 function initCursorMarqueeEffect() {
   const hoverOutDelay = 0.4;
   const followDuration = 0.4;
@@ -424,6 +441,7 @@ function initCursorMarqueeEffect() {
   const cursor = document.querySelector("[data-cursor-marquee-status]");
   if (!cursor) return;
   const targets = cursor.querySelectorAll("[data-cursor-marquee-text-target]");
+  targets.forEach((t) => { t.textContent = cursorLabel(t.textContent); });
 
   const xTo = gsap.quickTo(cursor, "x", { duration: followDuration, ease: "power3" });
   const yTo = gsap.quickTo(cursor, "y", { duration: followDuration, ease: "power3" });
@@ -433,7 +451,7 @@ function initCursorMarqueeEffect() {
   function playFor(el) {
     if (!el) return;
     if (pauseTimeout) clearTimeout(pauseTimeout);
-    const text = el.getAttribute("data-cursor-marquee-text") || "";
+    const text = cursorLabel(el.getAttribute("data-cursor-marquee-text") || "");
     const sec = (text.length || 1) / speedMultiplier;
     targets.forEach((t) => { t.textContent = text; t.style.animationPlayState = "running"; t.style.animationDuration = sec + "s"; });
     cursor.setAttribute("data-cursor-marquee-status", "active");

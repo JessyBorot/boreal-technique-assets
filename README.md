@@ -462,6 +462,12 @@ langue. `barba.init` reçoit donc une option `prevent` : Barba laisse le navigat
 Les liens à l'intérieur d'une même langue gardent la transition. Si le sous-dossier anglais change
 (Site settings › Localization), adapter la regex de `localeOfPath`.
 
+**Libellés du curseur marquee en anglais.** Le curseur affiche l'attribut `data-cursor-marquee-text` de
+l'élément survolé. Or la localisation Webflow ne traduit pas les attributs : sur `/en`, on lirait
+« En savoir plus ». `cursorLabel()` traduit donc les libellés connus quand `<html lang>` commence par `en`,
+d'après la table `CURSOR_LABELS_EN`. **Tout nouveau libellé de curseur doit être ajouté à cette table**,
+sinon il sort en français sur la version anglaise.
+
 ## URLs CDN (jsDelivr)
 ```
 https://cdn.jsdelivr.net/gh/JessyBorot/boreal-technique-assets@main/boreal-app.js
