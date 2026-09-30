@@ -319,6 +319,9 @@ bleu `dodger-blue` au survol/focus.
   les filtres défilent sur une ligne.
 - **Showreel à `<video>` natif** (T07 Hero projet — source = propriété du composant —, T10) : son + contrôles à
   l'ouverture, muet à la fermeture ; la vidéo n'apparaît qu'à l'ouverture (`.mini-showreel__video-el`).
+- **Texte riche** (`.text-rich-text`, articles et CGV) : tailles et marges propres pour h2 / h3 / h4, images pleine
+  colonne arrondies, liens soulignés (bleu au survol).
+- **T07** : ligne méta du hero en `text-wrap: balance` ; témoignage centré jusqu'en mobile (`.testimonial-container`).
 - **Mission / Vision (T03)** : taille du style h1 réduite dans `.section_mission-vision` sous 767 / 479px.
 
 ### Formulaire underlay (soumission)

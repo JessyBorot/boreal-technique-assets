@@ -858,3 +858,25 @@ h1.heading-style-h1 { text-wrap: balance; }
   .filter-buttons::-webkit-scrollbar { display: none; }
   .filter-buttons > * { flex: 0 0 auto; }
 }
+
+/* ===== ÉTUDE DE CAS (T07) — finitions mobile (Bug QA T07-4, 2026-09-30) =====
+   - Témoignage centré : sous 479, la ligne avatar + nom prend toute la largeur et restait calée à gauche.
+     Portée : `.testimonial-container` (les cartes du slider de T02 partagent `slide-demo__details`, alignées à gauche).
+   - Ligne méta du hero (« Client · Année · Type · Lieu ») : lignes équilibrées, plus de « Montréal » seul. */
+.testimonial-container .slide-demo__details { justify-content: center; }
+.meta-project .tag { text-wrap: balance; }
+
+/* ===== TEXTE RICHE (template Articles, T11 CGV) =====
+   Bug QA ART-1 / ART-2, 2026-09-30 :
+   - les H2 du corps prenaient le style h2 du site (56 px, presque le H1 de 77 px) et collaient au bloc précédent ;
+   - les images (600 × 400, reprises de WordPress) sortaient petites et calées à gauche ;
+   - les liens n'avaient aucun style : invisibles dans le texte. */
+.text-rich-text h2 { font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.5rem); line-height: 1.2; margin-top: 2.25em; margin-bottom: 0.6em; }
+.text-rich-text h3 { font-size: clamp(1.35rem, 1.1rem + 0.8vw, 1.75rem); line-height: 1.25; margin-top: 1.9em; margin-bottom: 0.5em; }
+.text-rich-text h4 { font-size: 1.25rem; line-height: 1.3; margin-top: 1.6em; margin-bottom: 0.4em; }
+.text-rich-text > :first-child { margin-top: 0; }
+.text-rich-text figure { width: 100%; max-width: 100%; margin: 2rem 0; }
+.text-rich-text figure img { width: 100%; height: auto; border-radius: 1rem; }
+.text-rich-text figure + figure { margin-top: 1rem; }
+.text-rich-text a { text-decoration: underline; text-underline-offset: 0.2em; text-decoration-thickness: 1px; transition: color .2s ease; }
+.text-rich-text a:hover { color: var(--_primitives---colors--dodger-blue); }
