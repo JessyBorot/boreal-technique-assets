@@ -467,6 +467,11 @@ mais ne suit pas l'ancre, et la transition remet le scroll en haut. `scrollToHas
 descend jusqu'à l'élément une fois `boreal:page-ready` émis (via Lenis, `immediate`). Appelé au
 chargement initial (`once`) et après chaque transition (`afterEnter`).
 
+**Liens URL `/#ancre` sur les pages EN.** Webflow localise les liens de *page*, pas les URL saisies à la
+main : `/#services-audiovisuels` (menu, footer) enverrait vers l'accueil FR. `localizeRootAnchors()`
+préfixe `/en` sur les pages `lang="en-…"` (au chargement pour le menu/footer, puis à chaque page pour
+le contenu).
+
 **Libellés du curseur marquee en anglais.** Le curseur affiche l'attribut `data-cursor-marquee-text` de
 l'élément survolé. Or la localisation Webflow ne traduit pas les attributs : sur `/en`, on lirait
 « En savoir plus ». `cursorLabel()` traduit donc les libellés connus quand `<html lang>` commence par `en`,

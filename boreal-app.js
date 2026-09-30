@@ -69,6 +69,7 @@ function initOnce() {
   onceInitialized = true;
   initLenis();
   initAnchorSmoothScroll();
+  localizeRootAnchors();         // /#ancre → /en/#ancre sur les pages EN (menu, footer)
   initBoldFullScreenNavigation();
   initNavLogoShrink();           // logo qui rétrécit passé 250px de scroll — persistant
   initCursorMarqueeEffect();
@@ -85,6 +86,7 @@ function runPageModulesOnce(container) {
   nextPage = container || document;
 
   const modules = [
+    localizeRootAnchors,       // idem pour les liens du contenu de la page
     initButtonCharacterStagger,
     initGlobalParallax,        // parallax flexible Osmo ([data-parallax="trigger"])
     initContentRevealScroll,   // reveal on scroll Osmo ([data-reveal-group])
@@ -264,6 +266,16 @@ function localeOfPath(pathname) {
 // Lien vers une section d'une AUTRE page (ex. menu/footer → /#services-audiovisuels) :
 // Barba remplace le contenu mais ne suit pas l'ancre, et la transition remet le scroll en haut.
 // On descend donc à la section une fois la transition finie (signal boreal:page-ready).
+// Lien URL vers une ancre de l'accueil (« /#services-audiovisuels », menu + footer) : Webflow
+// localise les liens de PAGE, pas les URL saisies à la main. Sur une page EN, on préfixe /en
+// pour rester dans la langue (sinon : accueil FR + rechargement complet par Barba prevent).
+function localizeRootAnchors() {
+  if (!/^en\b/i.test(document.documentElement.lang || "")) return;
+  document.querySelectorAll('a[href^="/#"]').forEach((a) => {
+    a.setAttribute("href", "/en" + a.getAttribute("href"));
+  });
+}
+
 function scrollToHashAfterTransition() {
   const hash = window.location.hash;
   if (!hash || hash.length < 2) return;
