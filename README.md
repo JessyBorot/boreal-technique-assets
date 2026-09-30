@@ -150,6 +150,8 @@ Le look statique (rayon, ratio, meta, tilt, perspective) vit dans les **classes 
 éditable dans le Designer. `boreal-styles.css` ne porte que la glue Swiper, le scrim et le
 `prefers-reduced-motion`. Le nombre de cartes = items de la Collection (~10-14 idéalement).
 ⚠️ Rendu visible **uniquement sur l'URL publiée**.
+Étiquette de la carte (`.realisations_meta .tag`) : fond sombre translucide + flou + padding (bug QA G8,
+2026-09-30). Elle est en haut de la carte, hors du scrim du bas, et disparaissait sur une image claire.
 
 **Où le module est utilisé (audit du 2026-08-12) :** un balayage des 11 pages publiées a
 comparé tous les `data-*` du DOM aux attributs réellement gérés par `boreal-app.js`. Résultat :

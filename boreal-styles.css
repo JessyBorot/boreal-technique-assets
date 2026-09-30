@@ -196,6 +196,12 @@
   background: linear-gradient(to top, rgba(3, 4, 5, .85) 0%, rgba(3, 4, 5, .15) 45%, rgba(3, 4, 5, 0) 70%);
 }
 .realisations_meta { z-index: 2; }
+/* L'étiquette est en HAUT de la carte, hors du scrim du bas : sur une image claire, elle
+   disparaissait (Bug QA G8, 2026-09-30). Fond sombre translucide + flou, propre au panorama. */
+.realisations_meta .tag {
+  padding: .3rem .7rem .3rem .6rem; border-radius: 999px;
+  background-color: rgba(3, 4, 5, .55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
 @media (prefers-reduced-motion: reduce) { .realisations_tilt { transform: none; } }
 
 
