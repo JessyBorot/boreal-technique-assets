@@ -555,4 +555,4 @@ https://cdn.jsdelivr.net/gh/JessyBorot/boreal-technique-assets@main/boreal-style
    - pointer une version taguée (`@v1.0.1`) au lieu de `@main`, soit
    - ajouter `?v=2` (puis `v=3`…) à la fin de l'URL dans le custom code Webflow.
 
-Dépend du HEAD/FOOTER custom code du site (voir dossier `webflow/` du projet Boréal).
+Dépend du HEAD/FOOTER custom code du site (copies dans `05-developpement/code-personnalise/` du projet Boréal).
