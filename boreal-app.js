@@ -450,6 +450,11 @@ function initBoldFullScreenNavigation() {
 }
 
 // ---- BOUTONS : stagger caractères (guardé pour ne pas re-wrapper) ----
+// Le texte est découpé en une lettre par span : sans libellé, un lecteur d'écran lirait les
+// lettres une à une. Le lien porte donc un aria-label = son texte, lu AVANT le découpage, donc
+// dans la langue de la page. Il remplace le « staggering button » de la démo Osmo (resté dans
+// Webflow) ou un libellé absent ; un libellé déjà rédigé est conservé.
+const PLACEHOLDER_ARIA = /^staggering button$/i;
 function initButtonCharacterStagger() {
   const offsetIncrement = 0.01;
   const buttons = document.querySelectorAll("[data-button-animate-chars]");
@@ -457,6 +462,12 @@ function initButtonCharacterStagger() {
     if (button.hasAttribute("data-chars-done")) return; // déjà traité
     button.setAttribute("data-chars-done", "");
     const text = button.textContent;
+    const control = button.closest("a, button");
+    const label = text.replace(/\s+/g, " ").trim();
+    if (control && label) {
+      const current = control.getAttribute("aria-label") || "";
+      if (!current || PLACEHOLDER_ARIA.test(current)) control.setAttribute("aria-label", label);
+    }
     button.innerHTML = "";
     [...text].forEach((char, index) => {
       const span = document.createElement("span");

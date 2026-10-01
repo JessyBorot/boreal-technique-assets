@@ -571,6 +571,12 @@ Libellés en place (bug QA G4, 2026-09-30) — poser l'attribut dans le Designer
 
 Les contrôles (flèches et puces de slider, filtres) et les boutons animés gardent le curseur normal.
 
+### Boutons à lettres animées — libellé accessible (2026-10-01)
+- `initButtonCharacterStagger()` découpe le texte en une lettre par `span`. Le lien (`closest("a, button")`) reçoit
+  `aria-label` = son texte, lu avant le découpage (donc dans la langue de la page). Remplace le
+  `aria-label="staggering button"` de la démo Osmo resté dans Webflow, ou complète un libellé absent ; un libellé
+  déjà rédigé est conservé.
+
 ### Article de blogue — partage et temps de lecture (2026-10-01)
 - `initArticleTools()` (module par page). Liens `[data-share="copy|linkedin|x|facebook"]` du template Articles
   (en-tête + bas d'article) : `href` calculé sur l'URL de la page (LinkedIn `share-offsite`, X `intent/post`,
