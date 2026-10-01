@@ -908,6 +908,7 @@ h1.heading-style-h1 { text-wrap: balance; }
 .parallax-title_wrapper .heading-style-h1 { font-size: clamp(2.75rem, 7vw, 7rem); line-height: 1.02; }
 @media screen and (max-width: 767px) {
   .mini-showreel:not(.left) { width: min(100vw - 3em, 10.5em); font-size: 0.875rem; bottom: 1rem; right: 1rem; }
+  .mini-showreel:not(.left) .mini-showreel__text { font-size: 1em; white-space: nowrap; }
   .container-medium.grid-2cols { grid-template-columns: 1fr; }
 }
 

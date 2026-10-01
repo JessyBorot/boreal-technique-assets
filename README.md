@@ -336,7 +336,7 @@ bleu `dodger-blue` au survol/focus.
   parent en `relative` via `:has()`. Timeline de T06 (provisoirement vers T07, à repointer à la duplication).
 - **T07** : titre du hero pleine largeur (le wrapper flex se réduisait au texte → 3 lignes dans 490px),
   `clamp(2.75rem, 7vw, 7rem)` ; carte « Voir la vidéo » à 10.5em sous 767 (`.mini-showreel:not(.left)`) ;
-  `.container-medium.grid-2cols` en une colonne pleine largeur sous 767 (« Aperçu », « Le client » à 50 %).
+  libellé « Voir la vidéo » sur une ligne ; `.container-medium.grid-2cols` en une colonne pleine largeur sous 767 (« Aperçu », « Le client » à 50 %).
 
 ### Formulaire underlay (soumission)
 - Panneau latéral persistant (`initFixedUnderlayNavigation`) ouvert par tout `[data-underlay-nav-toggle]`.
