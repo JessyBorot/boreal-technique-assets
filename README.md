@@ -324,6 +324,20 @@ bleu `dodger-blue` au survol/focus.
 - **T07** : ligne méta du hero en `text-wrap: balance` ; témoignage centré jusqu'en mobile (`.testimonial-container`).
 - **Mission / Vision (T03)** : taille du style h1 réduite dans `.section_mission-vision` sous 767 / 479px.
 
+### Retours de Jessy (2026-10-01)
+- **Curseur sur le slider radial** (accueil « On maîtrise chaque maillon », T02) : les cartes avaient bien
+  `data-cursor-marquee-text`, mais le slider pose un proxy de glissement transparent par-dessus
+  (`[data-radial-slider-proxy-wrap]`) : `elementFromPoint` ne voyait jamais la carte. `hitAt()` parcourt
+  `elementsFromPoint` en sautant ces calques. Couvre toutes les cartes à pop-up (radial, masonry T02, équipe T03).
+- **Panorama — coins rognés** : deux cartes voisines se touchaient dans l'espace 3D (`preserve-3d`) et l'une
+  traversait l'autre. `spaceBetween` relevé : 28 / 36 / 42 / 48 / 64px (au lieu de 13 / 17 / 19 / 22 / 34),
+  mesuré à 1440 (22px → coins coupés, 48px → cartes entières).
+- **Carte cliquable par lien étiré** : `[data-card-link]` (Link Block vide, `aria-label`) en `absolute; inset: 0`,
+  parent en `relative` via `:has()`. Timeline de T06 (provisoirement vers T07, à repointer à la duplication).
+- **T07** : titre du hero pleine largeur (le wrapper flex se réduisait au texte → 3 lignes dans 490px),
+  `clamp(2.75rem, 7vw, 7rem)` ; carte « Voir la vidéo » à 10.5em sous 767 (`.mini-showreel:not(.left)`) ;
+  `.container-medium.grid-2cols` en une colonne pleine largeur sous 767 (« Aperçu », « Le client » à 50 %).
+
 ### Formulaire underlay (soumission)
 - Panneau latéral persistant (`initFixedUnderlayNavigation`) ouvert par tout `[data-underlay-nav-toggle]`.
 - `.underlay-nav__inner` : `data-lenis-prevent` (posé en JS) + `max-height:100svh; overflow-y:auto`
@@ -372,6 +386,18 @@ hover « roll » d'Osmo ne s'appliquent donc plus. Correctif du 2026-09-30 (bug 
 Vérifié de 390×667 à 1920×1080 : 1 ligne par libellé, 29 à 148px sous le logo, sans défilement.
 - `.bold-nav__bottom` (réseaux sociaux, absolute pleine largeur) en `pointer-events: none` (ses liens le reprennent) :
   il recouvrait la moitié basse du bouton « Estimation rapide » du menu (bug QA G3).
+
+**Retours de Jessy du 2026-10-01 :**
+- **Animations rétablies** sans reposer `.bold-nav-full__link` : le CSS cible `.bold-nav-full__li > a`. Montée en
+  cascade à l'ouverture (9 liens, 40 ms d'écart), bouton « Estimation rapide » en fondu après les liens, survol
+  « roll » (clone par `text-shadow: 0 1lh`) et estompage des autres liens, seulement sur `(hover: hover)`.
+  Le `li` (Webflow) est en `overflow: hidden` : il masque le lien fermé et le clone.
+- **Tailles réduites** (« trop gros, condensé ») : services 56 → 40px à 1440×900 (`clamp(1.25rem, min(4.4vh, 5.6vw), 2.5rem)`),
+  26 → 22px à 390 ; secondaires 30 → 22px ; `row-gap` de la liste `clamp(0.6rem, 2vh, 1.25rem)`.
+- **Réseaux sociaux** : de simples `<p>` → vrais liens (Facebook, LinkedIn, Instagram de Boréal, nouvel onglet,
+  `data-barba-prevent="self"`) ; en mobile, barre calée à gauche, 14px, padding réduit (elle prenait ~100px).
+- **Logo du menu** → accueil (le lien était `#`). Le logo du footer pointait déjà vers `/`, mais sur l'accueil Barba
+  ignore un lien vers la page courante : `initLogoHomeLink()` (persistant) remonte alors en haut de page.
 
 ### Titre de hero — apparition lettre par lettre après la transition
 `initHeroTitleReveal` traite les **`h1[data-split="heading"]`** ; les autres titres restent sur
@@ -536,7 +562,7 @@ Libellés en place (bug QA G4, 2026-09-30) — poser l'attribut dans le Designer
 | Libellé | Éléments |
 |---|---|
 | « En savoir plus » | cartes services (accueil), slider radial (accueil, T02), masonry (T02) |
-| « Voir le projet » | cartes du panorama des réalisations |
+| « Voir le projet » | cartes du panorama des réalisations, cartes de la timeline (T06) |
 | « Lire l'article » | cartes de blogue (accueil, T04 dont l'article vedette, articles connexes) |
 | « Voir le profil » | équipe (T03) |
 | « Voir la vidéo » | bouton vidéo du hero (T07, composant Hero projet ; T10) |

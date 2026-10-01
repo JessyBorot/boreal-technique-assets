@@ -69,6 +69,7 @@ function initOnce() {
   onceInitialized = true;
   initLenis();
   initAnchorSmoothScroll();
+  initLogoHomeLink();            // logo du menu / du footer déjà sur l'accueil → retour en haut
   localizeRootAnchors();         // /#ancre → /en/#ancre sur les pages EN (menu, footer)
   initBoldFullScreenNavigation();
   initNavLogoShrink();           // logo qui rétrécit passé 250px de scroll — persistant
@@ -343,6 +344,22 @@ function initAnchorSmoothScroll() {
   });
 }
 
+// Logo du menu et du footer → accueil. Déjà sur l'accueil, Barba ignore un lien vers la page
+// courante : le clic ne faisait rien (retour de Jessy du 2026-10-01). On remonte alors en haut.
+function initLogoHomeLink() {
+  const norm = (p) => p.replace(/\/+$/, "") || "/";
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest(".bold-nav-full__logo, .footer12_logo-link");
+    if (!a || !a.href) return;
+    const url = new URL(a.href, window.location.href);
+    if (url.origin !== window.location.origin || norm(url.pathname) !== norm(window.location.pathname)) return;
+    e.preventDefault();
+    closeNav();
+    if (window.lenis) window.lenis.scrollTo(0, { duration: 1.2 });
+    else window.scrollTo({ top: 0, behavior: "smooth" });
+  }, true);
+}
+
 function resetPage(container) {
   window.scrollTo(0, 0);
   gsap.set(container, { clearProps: "position,top,left,right" });
@@ -500,9 +517,18 @@ function initCursorMarqueeEffect() {
     pauseTimeout = setTimeout(() => { targets.forEach((t) => { t.style.animationPlayState = "paused"; }); }, hoverOutDelay * 1000);
     activeEl = null;
   }
+  // Le slider radial pose un proxy de glissement transparent PAR-DESSUS ses cartes : le premier
+  // élément sous le pointeur est ce proxy, jamais la carte → pas de curseur sur l'accueil ni T02
+  // (retour de Jessy du 2026-10-01). On traverse les calques `[data-radial-slider-proxy-wrap]`.
+  function hitAt(x, y) {
+    for (const el of document.elementsFromPoint(x, y)) {
+      if (el.closest("[data-radial-slider-proxy-wrap]")) continue;
+      return el.closest("[data-cursor-marquee-text]");
+    }
+    return null;
+  }
   function checkTarget() {
-    const el = document.elementFromPoint(lastX, lastY);
-    const hit = el && el.closest("[data-cursor-marquee-text]");
+    const hit = hitAt(lastX, lastY);
     if (hit !== activeEl) { if (activeEl) pauseLater(); if (hit) playFor(hit); }
   }
   window.addEventListener("pointermove", (e) => { lastX = e.clientX; lastY = e.clientY; xTo(lastX); yTo(lastY); checkTarget(); }, { passive: true });
@@ -1679,7 +1705,7 @@ function initPanoramaCarousel() {
     effect: "panorama",
     panoramaEffect: { depth: 0, rotate: 37 },   // ← valeurs relevées chez Netfolie
     slidesPerView: 4,
-    spaceBetween: 22,
+    spaceBetween: 48,
     centeredSlides: true,
     loop: true,
     speed: 600,
@@ -1688,12 +1714,16 @@ function initPanoramaCarousel() {
     resistanceRatio: 0.85,
     slideToClickedSlide: false,
     freeMode: { enabled: true, momentum: false, sticky: false, minimumVelocity: 0.02 },
+    // Écarts plus grands que chez Netfolie : nos cartes sont plus grandes, et à 13–34 px deux
+    // cartes voisines se touchaient dans l'espace 3D (preserve-3d) — l'une traversait l'autre et
+    // en coupait un coin (« réalisations encore un peu crop », retour de Jessy du 2026-10-01).
+    // Mesuré à 1440 : 22 px → coins coupés, 48 px → cartes entières.
     breakpoints: {
-      0:    { slidesPerView: 1.6, spaceBetween: 13 },
-      768:  { slidesPerView: 2.4, spaceBetween: 17 },
-      992:  { slidesPerView: 3,   spaceBetween: 19 },
-      1280: { slidesPerView: 4,   spaceBetween: 22 },
-      1920: { slidesPerView: 4,   spaceBetween: 34 }
+      0:    { slidesPerView: 1.6, spaceBetween: 28 },
+      768:  { slidesPerView: 2.4, spaceBetween: 36 },
+      992:  { slidesPerView: 3,   spaceBetween: 42 },
+      1280: { slidesPerView: 4,   spaceBetween: 48 },
+      1920: { slidesPerView: 4,   spaceBetween: 64 }
     }
   });
   window._panoSwiper = swiper;

@@ -31,40 +31,69 @@
 .bold-nav-full__tile { transition: clip-path 1s cubic-bezier(.9, 0, .1, 1); clip-path: polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%); }
 [data-navigation-status="active"] .bold-nav-full__tile { clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%); }
 
-/* Liens */
-.bold-nav-full__link { transform: translateY(100%) rotate(5deg); transition: transform 0.75s cubic-bezier(.7, 0, .3, 1); }
-.bold-nav-full__li:nth-child(1) .bold-nav-full__link { transition-delay: 0.2s; }
-.bold-nav-full__li:nth-child(2) .bold-nav-full__link { transition-delay: 0.15s; }
-.bold-nav-full__li:nth-child(3) .bold-nav-full__link { transition-delay: 0.1s; }
-.bold-nav-full__li:nth-child(4) .bold-nav-full__link { transition-delay: 0.05s; }
-.bold-nav-full__li:nth-child(5) .bold-nav-full__link { transition-delay: 0s; }
-[data-navigation-status="active"] .bold-nav-full__link { transform: translateY(0%) rotate(0.001deg); transition-delay: 0.3s; }
-[data-navigation-status="active"] .bold-nav-full__li:nth-child(1) .bold-nav-full__link { transition-delay: 0.3s; }
-[data-navigation-status="active"] .bold-nav-full__li:nth-child(2) .bold-nav-full__link { transition-delay: 0.35s; }
-[data-navigation-status="active"] .bold-nav-full__li:nth-child(3) .bold-nav-full__link { transition-delay: 0.4s; }
-[data-navigation-status="active"] .bold-nav-full__li:nth-child(4) .bold-nav-full__link { transition-delay: 0.45s; }
-[data-navigation-status="active"] .bold-nav-full__li:nth-child(5) .bold-nav-full__link { transition-delay: 0.5s; }
+/* Liens — apparition à l'ouverture et survol « roll » (Osmo).
+   Les liens ne portent plus la classe `.bold-nav-full__link` depuis qu'ils ont été refaits en
+   TextBlock (traduisibles, bug QA G9) : on cible donc `.bold-nav-full__li > a`. Le `li` est en
+   `overflow: hidden` (Webflow) : il masque le lien avant l'ouverture et le clone du survol.
+   Retour de Jessy du 2026-10-01 (animations perdues). */
+.bold-nav-full__li > a { transform: translateY(100%) rotate(5deg); transition: transform 0.75s cubic-bezier(.7, 0, .3, 1); }
+[data-navigation-status="active"] .bold-nav-full__li > a { transform: translateY(0%) rotate(0.001deg); }
+/* fermeture : du bas vers le haut ; ouverture : cascade du haut vers le bas (9 liens) */
+.bold-nav-full__li:nth-child(1) > a { transition-delay: 0.2s; }
+.bold-nav-full__li:nth-child(2) > a { transition-delay: 0.175s; }
+.bold-nav-full__li:nth-child(3) > a { transition-delay: 0.15s; }
+.bold-nav-full__li:nth-child(4) > a { transition-delay: 0.125s; }
+.bold-nav-full__li:nth-child(5) > a { transition-delay: 0.1s; }
+.bold-nav-full__li:nth-child(6) > a { transition-delay: 0.075s; }
+.bold-nav-full__li:nth-child(7) > a { transition-delay: 0.05s; }
+.bold-nav-full__li:nth-child(8) > a { transition-delay: 0.025s; }
+.bold-nav-full__li:nth-child(9) > a { transition-delay: 0s; }
+[data-navigation-status="active"] .bold-nav-full__li:nth-child(1) > a { transition-delay: 0.3s; }
+[data-navigation-status="active"] .bold-nav-full__li:nth-child(2) > a { transition-delay: 0.34s; }
+[data-navigation-status="active"] .bold-nav-full__li:nth-child(3) > a { transition-delay: 0.38s; }
+[data-navigation-status="active"] .bold-nav-full__li:nth-child(4) > a { transition-delay: 0.42s; }
+[data-navigation-status="active"] .bold-nav-full__li:nth-child(5) > a { transition-delay: 0.46s; }
+[data-navigation-status="active"] .bold-nav-full__li:nth-child(6) > a { transition-delay: 0.5s; }
+[data-navigation-status="active"] .bold-nav-full__li:nth-child(7) > a { transition-delay: 0.54s; }
+[data-navigation-status="active"] .bold-nav-full__li:nth-child(8) > a { transition-delay: 0.58s; }
+[data-navigation-status="active"] .bold-nav-full__li:nth-child(9) > a { transition-delay: 0.62s; }
+/* bouton « Estimation rapide » : fondu après les liens */
+.bold-nav-full__ul > .btn-animate-chars { opacity: 0; transform: translateY(1rem); transition: opacity 0.5s ease, transform 0.75s cubic-bezier(.7, 0, .3, 1); }
+[data-navigation-status="active"] .bold-nav-full__ul > .btn-animate-chars { opacity: 1; transform: translateY(0); transition-delay: 0.7s; }
 
-/* Liens - hover */
+/* Survol : les autres liens s'estompent, le libellé roule vers le haut et son clone (text-shadow
+   décalé d'une hauteur de ligne) prend sa place. Un libellé = une ligne (tailles ci-dessous), sinon
+   le clone se superpose (cause du bug G1). Désactivé au tactile. */
 .bold-nav-full__li { transition: opacity 0.5s cubic-bezier(.7, 0, .3, 1); }
-.bold-nav-full__ul:has(.bold-nav-full__li:hover) .bold-nav-full__li { opacity: 0.15; }
-.bold-nav-full__ul:has(.bold-nav-full__li:hover) .bold-nav-full__li:hover { opacity: 1; }
-.bold-nav-full__link .bold-nav-full__link-text { transition: transform 0.5s cubic-bezier(.7, 0, .3, 1); transform: translateY(0%) rotate(0.001deg); }
-.bold-nav-full__link:hover .bold-nav-full__link-text { transform: translateY(-100%) rotate(0.001deg); }
+@media (hover: hover) {
+  .bold-nav-full__ul:has(.bold-nav-full__li:hover) .bold-nav-full__li { opacity: 0.15; }
+  .bold-nav-full__ul:has(.bold-nav-full__li:hover) .bold-nav-full__li:hover { opacity: 1; }
+  .bold-nav-full__li > a .bold-nav-full__link-text { white-space: nowrap; text-shadow: 0 1.1em 0 currentColor; text-shadow: 0 1lh 0 currentColor; transition: transform 0.5s cubic-bezier(.7, 0, .3, 1); transform: translateY(0%) rotate(0.001deg); }
+  .bold-nav-full__li > a:hover .bold-nav-full__link-text { transform: translateY(-100%) rotate(0.001deg); }
+}
 
-/* Taille des liens du menu plein écran (V2) : les liens portent les classes de titre du site
-   (heading-style-h2 pour les services, heading-style-h4 pour le reste), dont la taille ne dépend
-   que de la largeur. Dans le menu, elle suit aussi la HAUTEUR de l'écran (sinon la liste passe
-   sous le logo sur un portable 1440×760) et, sous 480px, la largeur, pour que chaque libellé
-   tienne sur une ligne (« Location de scènes mobiles » = 408px à 33px pour 342px dispo à 390).
-   Portée limitée au menu : les titres des pages ne changent pas. */
-.bold-nav-full__ul .heading-style-h2 { font-size: clamp(1.4rem, min(6.2vh, 6.8vw), 3.5rem); }
-.bold-nav-full__ul .heading-style-h4 { font-size: clamp(1.25rem, min(3.3vh, 4.5vw), 1.9rem); }
-/* La barre du bas (réseaux sociaux) est en absolute pleine largeur : elle recouvrait la moitié
-   basse du bouton « Estimation rapide » du menu, qui ne répondait qu'au clic sur son haut.
-   Elle laisse passer les clics, ses liens les reprennent. (Bug QA G3, 2026-09-30.) */
+/* Taille des liens du menu plein écran. Les liens portent les classes de titre du site
+   (heading-style-h2 pour les services, heading-style-h4 pour le reste) ; dans le menu, la taille
+   suit aussi la HAUTEUR de l'écran (portable 1440×760) et la largeur sous 480px, pour qu'un
+   libellé tienne sur une ligne. Portée limitée au menu.
+   2026-10-01 (retour de Jessy « trop gros, condensé ») : services 56 → 40px à 1440×900,
+   26 → 22px à 390 ; secondaires 30 → 22px ; un peu plus d'air entre les services. */
+.bold-nav-full__ul .heading-style-h2 { font-size: clamp(1.25rem, min(4.4vh, 5.6vw), 2.5rem); line-height: 1.15; }
+.bold-nav-full__ul .heading-style-h4 { font-size: clamp(1.05rem, min(2.5vh, 4.2vw), 1.4rem); line-height: 1.2; }
+.bold-nav-full__ul { row-gap: clamp(0.6rem, 2vh, 1.25rem); }
+
+/* Réseaux sociaux (bas du menu) : liens discrets. En mobile, ils prenaient une bande de ~100px
+   (padding 2.25em 2.5em + 18px) → collés en bas à gauche, plus petits (retour du 2026-10-01).
+   La barre est en absolute pleine largeur : elle recouvrait la moitié basse du bouton
+   « Estimation rapide » → elle laisse passer les clics, ses liens les reprennent (bug QA G3). */
 .bold-nav__bottom { pointer-events: none; }
 .bold-nav__bottom a { pointer-events: auto; }
+.bold-nav__bottom .bold-nav__word { color: inherit; text-decoration: none; transition: opacity 0.3s ease; }
+.bold-nav__bottom .bold-nav__word:hover { opacity: 1; }
+@media screen and (max-width: 767px) {
+  .bold-nav__bottom { justify-content: flex-start; padding: 1rem 1.5rem 1.25rem; column-gap: 1.25rem; }
+  .bold-nav__bottom .bold-nav__word { font-size: 0.875rem; }
+}
 
 
 /* ===== LOGO DE LA NAV — réduction au scroll =====
@@ -865,6 +894,29 @@ h1.heading-style-h1 { text-wrap: balance; }
    - Ligne méta du hero (« Client · Année · Type · Lieu ») : lignes équilibrées, plus de « Montréal » seul. */
 .testimonial-container .slide-demo__details { justify-content: center; }
 .meta-project .tag { text-wrap: balance; }
+
+/* ===== ÉTUDE DE CAS (T07) — retours de Jessy du 2026-10-01 =====
+   - Titre du hero : le wrapper (flex centré) se réduisait à la largeur du texte, et `text-wrap: balance`
+     l'équilibrait sur cette largeur → « Gala annuel / Cascades / 2025. » sur 3 lignes dans 490 px à 1440.
+     Le wrapper prend toute la largeur, le titre monte à 7vw (100 px à 1440) dans un container de 75rem.
+   - Carte « Voir la vidéo » : 240 × 206 px à 390, trop présente sous le titre → 10.5em, texte plus petit.
+     `.left` = la carte de T10, dans le flux : non concernée.
+   - « Aperçu » et « Le client » (`.container-medium.grid-2cols`) : en mobile, la grille passait en une
+     colonne de `.5fr` → titre et texte sur 50 % de l'écran. Une colonne pleine largeur. */
+.parallax-title_wrapper { width: 100%; }
+.parallax-title_wrapper .container-medium { max-width: 75rem; }
+.parallax-title_wrapper .heading-style-h1 { font-size: clamp(2.75rem, 7vw, 7rem); line-height: 1.02; }
+@media screen and (max-width: 767px) {
+  .mini-showreel:not(.left) { width: min(100vw - 3em, 10.5em); font-size: 0.875rem; bottom: 1rem; right: 1rem; }
+  .container-medium.grid-2cols { grid-template-columns: 1fr; }
+}
+
+/* ===== CARTE CLIQUABLE — lien étiré =====
+   Un bloc Webflow ne devient pas un lien sans le reconstruire : on pose dans la carte un Link Block vide
+   `[data-card-link]` (avec `aria-label`) qui la recouvre entièrement. Timeline de T06 (2026-10-01) ;
+   la carte porte aussi `data-cursor-marquee-text` pour le curseur. */
+:has(> [data-card-link]) { position: relative; }
+[data-card-link] { position: absolute; inset: 0; z-index: 3; }
 
 /* ===== TEXTE RICHE (template Articles, T11 CGV) =====
    Bug QA ART-1 / ART-2, 2026-09-30 :
