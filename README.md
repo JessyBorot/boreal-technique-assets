@@ -333,7 +333,9 @@ bleu `dodger-blue` au survol/focus.
   traversait l'autre. `spaceBetween` relevé : 28 / 36 / 42 / 48 / 64px (au lieu de 13 / 17 / 19 / 22 / 34),
   mesuré à 1440 (22px → coins coupés, 48px → cartes entières).
 - **Carte cliquable par lien étiré** : `[data-card-link]` (Link Block vide, `aria-label`) en `absolute; inset: 0`,
-  parent en `relative` via `:has()`. Timeline de T06 (provisoirement vers T07, à repointer à la duplication).
+  parent en `relative` via `:has()`. Depuis le 2026-10-01, le lien porte aussi la classe Webflow native `card-link`
+  (mêmes propriétés) pour être visible dans le Designer ; la règle d'attribut reste en secours. Utilisé sur T06
+  (grille + timeline) et sur les 4 listes de cartes du blogue.
 - **T07** : titre du hero pleine largeur (le wrapper flex se réduisait au texte → 3 lignes dans 490px),
   `clamp(2.75rem, 7vw, 7rem)` ; carte « Voir la vidéo » à 10.5em sous 767 (`.mini-showreel:not(.left)`) ;
   libellé « Voir la vidéo » sur une ligne ; `.container-medium.grid-2cols` en une colonne pleine largeur sous 767 (« Aperçu », « Le client » à 50 %).
@@ -568,6 +570,15 @@ Libellés en place (bug QA G4, 2026-09-30) — poser l'attribut dans le Designer
 | « Voir la vidéo » | bouton vidéo du hero (T07, composant Hero projet ; T10) |
 
 Les contrôles (flèches et puces de slider, filtres) et les boutons animés gardent le curseur normal.
+
+### Article de blogue — partage et temps de lecture (2026-10-01)
+- `initArticleTools()` (module par page). Liens `[data-share="copy|linkedin|x|facebook"]` du template Articles
+  (en-tête + bas d'article) : `href` calculé sur l'URL de la page (LinkedIn `share-offsite`, X `intent/post`,
+  Facebook `sharer`) ; « copy » copie l'URL dans le presse-papiers, bulle de confirmation 2 s
+  (`[data-share-status="copied"]::after`, texte = `aria-label`). Les `aria-label` sont posés par le script dans la
+  langue de la page (la localisation Webflow ne traduit pas les attributs).
+- Temps de lecture : mots de `[data-reading-source]` (le rich text du corps) ÷ 230, arrondi au supérieur, minimum 1,
+  écrit dans `[data-reading-time]`. Remplace la valeur du champ CMS, qui n'est plus à tenir à jour.
 
 ## URLs CDN (jsDelivr)
 ```

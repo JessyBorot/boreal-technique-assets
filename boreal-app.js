@@ -116,6 +116,7 @@ function runPageModulesOnce(container) {
     initLogoWallCycle,
     initPanoramaCarousel,
     initBunnyPlayer,         // lecteur vidéo HLS (Osmo advanced) — page Réalisation (T07)
+    initArticleTools,        // article de blogue : partage ([data-share]) + temps de lecture ([data-reading-time])
     initFooterParallax
   ];
   modules.forEach((fn) => {
@@ -3265,6 +3266,58 @@ function init3dImageCarousel() {
 
   // Handle de nettoyage complet pour la ré-init Barba
   _carousel3d = { teardown() { window.removeEventListener("resize", onResize); clearTimeout(rt); destroy(); } };
+}
+
+// ---- ARTICLE DE BLOGUE : PARTAGE + TEMPS DE LECTURE ----
+// Template Articles. Les liens de partage portent [data-share="copy|linkedin|x|facebook"] ;
+// l'URL partagée est celle de la page (sans paramètres). Les aria-label sont posés ici, dans la
+// langue de la page : la localisation Webflow ne traduit pas les attributs.
+// Le temps de lecture est calculé sur le corps de l'article ([data-reading-source], 230 mots/min,
+// minimum 1) et écrit dans [data-reading-time] : il suit les articles que le client ajoute, sans
+// champ CMS à tenir à jour.
+const SHARE_LABELS = {
+  fr: { copy: "Copier le lien", copied: "Lien copié", linkedin: "Partager sur LinkedIn", x: "Partager sur X", facebook: "Partager sur Facebook" },
+  en: { copy: "Copy link", copied: "Link copied", linkedin: "Share on LinkedIn", x: "Share on X", facebook: "Share on Facebook" }
+};
+function initArticleTools() {
+  const root = nextPage || document;
+  const lang = /^en\b/i.test(document.documentElement.lang || "") ? "en" : "fr";
+  const labels = SHARE_LABELS[lang];
+  const url = location.origin + location.pathname;
+  const title = (root.querySelector("h1") || {}).textContent || document.title;
+  const enc = encodeURIComponent;
+  const targets = {
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${enc(url)}`,
+    x: `https://x.com/intent/post?url=${enc(url)}&text=${enc(title.trim())}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}`
+  };
+
+  root.querySelectorAll("[data-share]").forEach((link) => {
+    const kind = link.getAttribute("data-share");
+    if (labels[kind]) link.setAttribute("aria-label", labels[kind]);
+    if (kind === "copy") {
+      link.setAttribute("href", url);
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        const done = () => {
+          link.setAttribute("data-share-status", "copied");
+          link.setAttribute("aria-label", labels.copied);
+          setTimeout(() => { link.removeAttribute("data-share-status"); link.setAttribute("aria-label", labels.copy); }, 2000);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, () => {});
+      });
+    } else if (targets[kind]) {
+      link.setAttribute("href", targets[kind]);
+    }
+  });
+
+  const source = root.querySelector("[data-reading-source]");
+  const out = root.querySelectorAll("[data-reading-time]");
+  if (source && out.length) {
+    const words = (source.textContent || "").trim().split(/\s+/).filter(Boolean).length;
+    const minutes = Math.max(1, Math.ceil(words / 230));
+    out.forEach((el) => { el.textContent = String(minutes); });
+  }
 }
 
 // ---- FOOTER PARALLAX ----
